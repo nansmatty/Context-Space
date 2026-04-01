@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import app from './app';
 
-const PORT = process.env.PORT || 6000;
+const PORT = process.env.PORT || 6001;
 
 app.get('/health', (req, res) => {
 	res.send('OK');

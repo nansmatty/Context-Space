@@ -2,6 +2,6 @@ services:
   backend:
     build: .
     ports:
-      - "6000:6000"
+      - "6001:6001"
     env_file:
       - .env
