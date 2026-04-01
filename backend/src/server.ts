@@ -1,6 +1,6 @@
-import express from 'express';
+import 'dotenv/config';
+import app from './app';
 
-const app = express();
 const PORT = process.env.PORT || 6000;
 
 app.get('/health', (req, res) => {
