@@ -24,7 +24,7 @@ export const handler = async (event: any) => {
 
 		const body = await streamToString(response.Body);
 
-		console.log('File content preview:', body.slice(0, 200));
+		console.log('File content preview:', { preview: body.slice(0, 200), length: body.length });
 
 		return {
 			success: true,

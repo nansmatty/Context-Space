@@ -4,10 +4,11 @@
     "module": "CommonJS",
     "strict": true,
     "esModuleInterop": true,
-    "rootDir": "./ingestion",
+    "resolveJsonModule": true,
+    "rootDir": "./",
     "outDir": "dist",
     "types": [
       "node"
-    ],
+    ]
   }
 }
