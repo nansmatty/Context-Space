@@ -5,6 +5,9 @@
     "strict": true,
     "esModuleInterop": true,
     "rootDir": "./ingestion",
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": [
+      "node"
+    ],
   }
 }
