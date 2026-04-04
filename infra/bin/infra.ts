@@ -1,6 +1,7 @@
 #!/usr/bin/env node
+import 'dotenv/config';
 import * as cdk from 'aws-cdk-lib/core';
-import { ContextSpaceStack } from '../lib/infra-stack';
+import { ContextSpaceStack } from '../lib/stack/infra-stack';
 
 const app = new cdk.App();
 new ContextSpaceStack(app, 'ContextSpaceStack', {
