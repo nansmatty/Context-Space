@@ -1,10 +1,11 @@
-export const streamToString = async (stream: any): Promise<string> => {
-	return await new Promise((resolve, reject) => {
-		const chunks: any[] = [];
-		stream.on('data', (chunk: any) => chunks.push(chunk));
-		stream.on('error', (err: any) => reject(err));
-		stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-	});
+export const streamToBuffer = async (stream: NodeJS.ReadableStream): Promise<Buffer> => {
+	const chunks: Buffer[] = [];
+
+	for await (const chunk of stream) {
+		chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+	}
+
+	return Buffer.concat(chunks);
 };
 
 export const chunkText = (text: string): string[] => {
