@@ -25,12 +25,26 @@ export const handler = async (event: any) => {
 
 		let extractedText = '';
 
+		const parserService = new ParserService();
+
 		switch (extension) {
 			case 'pdf':
-				extractedText = await new ParserService().extractTextFromPDF(streamedText);
+				console.log('Starting PDF extraction');
+				const extractionStart = Date.now();
+				extractedText = await parserService.extractTextFromPDF(streamedText);
+				console.log('PDF extraction completed', {
+					durationMs: Date.now() - extractionStart,
+					extractedLength: extractedText.length,
+				});
 				break;
 			case 'txt':
-				extractedText = await new ParserService().extractTextFromBuffer(streamedText);
+				console.log('Starting TXT extraction');
+				const extractionTextStart = Date.now();
+				extractedText = await parserService.extractTextFromBuffer(streamedText);
+				console.log('TXT extraction completed', {
+					durationMs: Date.now() - extractionTextStart,
+					extractedLength: extractedText.length,
+				});
 				break;
 			default:
 				throw new Error(`Unsupported file type: ${extension}`);
@@ -38,11 +52,15 @@ export const handler = async (event: any) => {
 
 		const chunks = chunkText(extractedText);
 
+		console.log('Text chunking completed');
+
 		console.log({
 			fileName: key,
 			extension,
 			extractedLength: extractedText.length,
 			chunkCount: chunks.length,
+			bufferSizeBytes: streamedText.length,
+			bufferSizeKB: Math.round(streamedText.length / 1024),
 		});
 
 		return {
