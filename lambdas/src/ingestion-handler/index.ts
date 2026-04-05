@@ -27,10 +27,10 @@ export const handler = async (event: any) => {
 
 		switch (extension) {
 			case 'pdf':
-				extractedText = await new ParserService().parsePDF(streamedText);
+				extractedText = await new ParserService().extractTextFromPDF(streamedText);
 				break;
 			case 'txt':
-				extractedText = await new ParserService().parseText(streamedText);
+				extractedText = await new ParserService().extractTextFromBuffer(streamedText);
 				break;
 			default:
 				throw new Error(`Unsupported file type: ${extension}`);
