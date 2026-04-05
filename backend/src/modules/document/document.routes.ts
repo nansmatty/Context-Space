@@ -8,11 +8,11 @@ const router = Router();
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit\
-	fileFilter: (req, file, cb) => {
-		if (file.mimetype === 'application/pdf') {
+	fileFilter: (_req, file, cb) => {
+		if (file.mimetype === 'application/pdf' || file.mimetype === 'text/plain') {
 			cb(null, true);
 		} else {
-			cb(new AppError('Only PDF documents are allowed', 400));
+			cb(new AppError('Only PDF and TXT documents are allowed', 400));
 		}
 	},
 });
