@@ -15,7 +15,11 @@ const s3 = new S3Client({
 export const uploadToS3 = async (file: Buffer, originalName: string, contentType: string) => {
 	try {
 		const ext = path.extname(originalName);
-		const baseName = path.basename(originalName, ext).replace(/\s+/g, '-');
+		const baseName = path
+			.basename(originalName, ext)
+			.replace(/[^a-zA-Z0-9-_]/g, '-')
+			.replace(/-+/g, '-')
+			.toLowerCase();
 		const uniqueKey = `upload/${baseName}-${randomUUID()}${ext}`;
 
 		const params = new PutObjectCommand({
