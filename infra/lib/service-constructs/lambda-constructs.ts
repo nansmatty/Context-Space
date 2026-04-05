@@ -11,7 +11,7 @@ export class LambdaConstructs extends Construct {
 
 		this.ingestionLambda = new NodejsFunction(this, 'IngestionLambda', {
 			runtime: Runtime.NODEJS_22_X,
-			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'ingestion', 'index.ts'),
+			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'ingestion-handler', 'index.ts'),
 			handler: 'handler',
 		});
 	}
