@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { chunkText, streamToString } from '../utils/ingestion-utils';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
@@ -10,9 +11,6 @@ export const handler = async (event: any) => {
 		const bucket = record.s3.bucket.name;
 		const key = decodeURIComponent(record.s3.object.key);
 
-		console.log('Bucket:', bucket);
-		console.log('Key:', key);
-
 		const command = new GetObjectCommand({
 			Bucket: bucket,
 			Key: key,
@@ -20,11 +18,11 @@ export const handler = async (event: any) => {
 
 		const response = await s3Client.send(command);
 
-		console.log('File fetched from S3');
+		const streamedText = await streamToString(response.Body);
 
-		const body = await streamToString(response.Body);
+		const chunks = chunkText(streamedText);
 
-		console.log('File content preview:', { preview: body.slice(0, 200), length: body.length });
+		console.log({ chunks });
 
 		return {
 			success: true,
@@ -33,13 +31,4 @@ export const handler = async (event: any) => {
 		console.error('Error processing S3 event:', error);
 		throw error;
 	}
-};
-
-const streamToString = async (stream: any): Promise<string> => {
-	return await new Promise((resolve, reject) => {
-		const chunks: any[] = [];
-		stream.on('data', (chunk: any) => chunks.push(chunk));
-		stream.on('error', (err: any) => reject(err));
-		stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-	});
 };
