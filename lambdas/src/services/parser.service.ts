@@ -1,9 +1,13 @@
-import * as pdfParse from 'pdf-parse';
-
+import { PDFParse } from 'pdf-parse';
 export class ParserService {
 	async parsePDF(buffer: Buffer): Promise<string> {
-		const data = await (pdfParse as any)(buffer);
-		return data.text;
+		const parser = new PDFParse({ data: buffer });
+		try {
+			const result = await parser.getText();
+			return result.text?.trim() || '';
+		} finally {
+			await parser.destroy();
+		}
 	}
 
 	async parseText(buffer: Buffer): Promise<string> {
