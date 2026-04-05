@@ -1,6 +1,6 @@
 // import { CanvasFactory } from 'pdf-parse/worker';
 // import { PDFParse } from 'pdf-parse';
-import { extractText } from 'unpdf';
+import { extractText, getDocumentProxy } from 'unpdf';
 export class ParserService {
 	// this version is for pdf-parser package.
 	// async extractTextFromPDF(buffer: Buffer): Promise<string> {
@@ -16,11 +16,10 @@ export class ParserService {
 	// this version is for unpdf package.
 	async extractTextFromPDF(buffer: Buffer): Promise<string> {
 		try {
-			const { text } = await extractText(new Uint8Array(buffer), {
-				mergePages: true,
-			});
+			const pdf = await getDocumentProxy(new Uint8Array(buffer));
+			const { text } = await extractText(pdf, { mergePages: true });
 
-			return text;
+			return text.trim();
 		} catch (error) {
 			console.error('UNPDF: error extracting text', error);
 			throw error;
