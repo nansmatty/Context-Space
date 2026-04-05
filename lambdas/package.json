@@ -14,7 +14,8 @@
     "@aws-sdk/client-s3": "^3.1023.0",
     "@napi-rs/canvas": "^0.1.97",
     "dotenv": "^17.4.0",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^2.4.5",
+    "unpdf": "^1.4.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
