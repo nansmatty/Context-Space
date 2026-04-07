@@ -25,6 +25,7 @@ export class ContextSpaceStack extends cdk.Stack {
 			dbSecurityGroup: database.securityGroup,
 		});
 
+		// Terminal Output logs
 		new cdk.CfnOutput(this, 'DbSecretArn', {
 			value: database.cluster.secret!.secretArn,
 		});
