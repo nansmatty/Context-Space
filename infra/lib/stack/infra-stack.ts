@@ -18,8 +18,12 @@ export class ContextSpaceStack extends cdk.Stack {
 
 		// Construct Calls
 		const s3Bucket = new S3BucketConstruct(this, 'S3BucketConstruct');
-		const lambdaConstructs = new LambdaConstructs(this, 'LambdaConstructs');
 		const database = new DatabaseConstruct(this, 'DatabaseConstruct', vpc);
+		const lambdaConstructs = new LambdaConstructs(this, 'LambdaConstructs', {
+			vpc,
+			dbCluster: database.cluster,
+			dbSecurityGroup: database.securityGroup,
+		});
 
 		new cdk.CfnOutput(this, 'DbSecretArn', {
 			value: database.cluster.secret!.secretArn,
