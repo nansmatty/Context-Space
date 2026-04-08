@@ -13,7 +13,7 @@ create table if not exists documents (
   error_message text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
-)
+);
 
 create index if not exists idx_documents_workspace_id on documents (workspace_id);
 create index if not exists idx_documents_user_id on documents (user_id);
