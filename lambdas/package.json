@@ -1,28 +1,28 @@
 {
-  "name": "lambdas",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1023.0",
-    "@aws-sdk/client-secrets-manager": "^3.1026.0",
-    "@napi-rs/canvas": "^0.1.97",
-    "dotenv": "^17.4.0",
-    "pdf-parse": "^2.4.5",
-    "pg": "^8.20.0",
-    "unpdf": "^1.4.0"
-  },
-  "devDependencies": {
-    "@types/node": "^25.5.2",
-    "@types/pg": "^8.20.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^6.0.2"
-  }
+	"name": "lambdas",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"run:migrations": "tsx src/db/run-migrations.ts"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1023.0",
+		"@aws-sdk/client-secrets-manager": "^3.1026.0",
+		"@napi-rs/canvas": "^0.1.97",
+		"dotenv": "^17.4.0",
+		"pdf-parse": "^2.4.5",
+		"pg": "^8.20.0",
+		"unpdf": "^1.4.0"
+	},
+	"devDependencies": {
+		"@types/node": "^25.5.2",
+		"@types/pg": "^8.20.0",
+		"ts-node": "^10.9.2",
+		"typescript": "^6.0.2"
+	}
 }
