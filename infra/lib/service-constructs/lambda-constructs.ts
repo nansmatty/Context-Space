@@ -26,6 +26,8 @@ export class LambdaConstructs extends Construct {
 			description: 'Security group for ingestion lambda',
 		});
 
+		props.dbSecurityGroup.addIngressRule(this.lambdaSecurityGroup, ec2.Port.tcp(5432), 'Allow Lambda to access Aurora PostgreSQL');
+
 		// This lambda setup is configured with PDF Parser package.
 		// this.ingestionLambda = new NodejsFunction(this, 'IngestionLambda', {
 		// 	runtime: Runtime.NODEJS_22_X,
@@ -69,13 +71,20 @@ export class LambdaConstructs extends Construct {
 		});
 
 		props.dbCluster.secret?.grantRead(this.ingestionLambda);
-		props.dbSecurityGroup.addIngressRule(this.lambdaSecurityGroup, ec2.Port.tcp(5432), 'Allow Lambda to access Aurora PostgreSQL');
 
 		this.migrationLambda = new NodejsFunction(this, 'MigrationLambda', {
 			runtime: Runtime.NODEJS_22_X,
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'migration-handler', 'index.ts'),
 			handler: 'handler',
 			timeout: Duration.seconds(30),
+			vpc: props.vpc,
+			securityGroups: [this.lambdaSecurityGroup],
+			environment: {
+				DB_HOST: props.dbCluster.clusterEndpoint.hostname,
+				DB_PORT: props.dbCluster.clusterEndpoint.port.toString(),
+				DB_NAME: 'contextspace',
+				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
+			},
 			bundling: {
 				commandHooks: {
 					beforeBundling(inputDir: string, outputDir: string): string[] {
@@ -85,8 +94,6 @@ export class LambdaConstructs extends Construct {
 						return [];
 					},
 					afterBundling(inputDir: string, outputDir: string): string[] {
-						// return [`mkdir -p ${outputDir}/db/migrations`, `cp -r ${inputDir}/lambdas/src/db/migrations/* ${outputDir}/db/migrations`];
-
 						return [
 							`if not exist "${outputDir}\\db\\migrations" mkdir "${outputDir}\\db\\migrations"`,
 							`xcopy "${inputDir}\\..\\lambdas\\src\\db\\migrations\\*" "${outputDir}\\db\\migrations\\" /E /I /Y`,
@@ -95,5 +102,7 @@ export class LambdaConstructs extends Construct {
 				},
 			},
 		});
+
+		props.dbCluster.secret?.grantRead(this.migrationLambda);
 	}
 }
