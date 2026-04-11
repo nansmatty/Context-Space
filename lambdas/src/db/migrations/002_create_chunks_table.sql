@@ -1,7 +1,7 @@
 create extension if not exists vector;
 
 create table if not exists chunks (
-  id uuid primary key default uuid_generate)v4(),
+  id uuid primary key default uuid_generate_v4(),
   document_id uuid not null references documents(id) on delete cascade,
   user_id varchar(64) not null,
   worksapce_id varchar(64) not null,
