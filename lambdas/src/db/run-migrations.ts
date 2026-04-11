@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createDbClient } from './db';
 
-async function runMigrations() {
+export async function runMigrations() {
 	const dbClient = await createDbClient();
 
 	try {
