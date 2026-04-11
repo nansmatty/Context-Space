@@ -14,6 +14,7 @@ interface LambdaConstructsProps {
 
 export class LambdaConstructs extends Construct {
 	public readonly ingestionLambda: NodejsFunction;
+	public readonly migrationLambda: NodejsFunction;
 	public readonly lambdaSecurityGroup: ec2.SecurityGroup;
 
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {
@@ -69,5 +70,12 @@ export class LambdaConstructs extends Construct {
 
 		props.dbCluster.secret?.grantRead(this.ingestionLambda);
 		props.dbSecurityGroup.addIngressRule(this.lambdaSecurityGroup, ec2.Port.tcp(5432), 'Allow Lambda to access Aurora PostgreSQL');
+
+		this.migrationLambda = new NodejsFunction(this, 'MigrationLambda', {
+			runtime: Runtime.NODEJS_22_X,
+			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'migration-handler', 'index.ts'),
+			handler: 'handler',
+			timeout: Duration.seconds(30),
+		});
 	}
 }
