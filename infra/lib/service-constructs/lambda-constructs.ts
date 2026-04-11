@@ -76,6 +76,24 @@ export class LambdaConstructs extends Construct {
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'migration-handler', 'index.ts'),
 			handler: 'handler',
 			timeout: Duration.seconds(30),
+			bundling: {
+				commandHooks: {
+					beforeBundling(inputDir: string, outputDir: string): string[] {
+						return [];
+					},
+					beforeInstall(inputDir: string, outputDir: string): string[] {
+						return [];
+					},
+					afterBundling(inputDir: string, outputDir: string): string[] {
+						// return [`mkdir -p ${outputDir}/db/migrations`, `cp -r ${inputDir}/lambdas/src/db/migrations/* ${outputDir}/db/migrations`];
+
+						return [
+							`if not exist "${outputDir}\\db\\migrations" mkdir "${outputDir}\\db\\migrations"`,
+							`xcopy "${inputDir}\\..\\lambdas\\src\\db\\migrations\\*" "${outputDir}\\db\\migrations\\" /E /I /Y`,
+						];
+					},
+				},
+			},
 		});
 	}
 }
