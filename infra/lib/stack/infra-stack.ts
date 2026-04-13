@@ -13,7 +13,7 @@ export class ContextSpaceStack extends cdk.Stack {
 
 		const vpc = new ec2.Vpc(this, 'ContextSpaceVPC', {
 			maxAzs: 2,
-			natGateways: 1,
+			natGateways: 0,
 		});
 
 		// Construct Calls
