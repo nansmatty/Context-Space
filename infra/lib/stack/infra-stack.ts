@@ -6,6 +6,7 @@ import { EventType } from 'aws-cdk-lib/aws-s3';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { DatabaseConstruct } from '../service-constructs/database-construct';
+import { SqsQueueConstruct } from '../service-constructs/sqs-queue-construct';
 
 export class ContextSpaceStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -31,11 +32,12 @@ export class ContextSpaceStack extends cdk.Stack {
 		// Construct Calls
 		const s3Bucket = new S3BucketConstruct(this, 'S3BucketConstruct');
 		const database = new DatabaseConstruct(this, 'DatabaseConstruct', vpc);
-		const lambdaConstructs = new LambdaConstructs(this, 'LambdaConstructs', {
+		const lambdas = new LambdaConstructs(this, 'LambdaConstructs', {
 			vpc,
 			dbCluster: database.cluster,
 			dbSecurityGroup: database.securityGroup,
 		});
+		const sqsQueues = new SqsQueueConstruct(this, 'SqsQueueConstruct');
 
 		// Terminal Output logs
 		new cdk.CfnOutput(this, 'DbSecretArn', {
@@ -51,8 +53,8 @@ export class ContextSpaceStack extends cdk.Stack {
 		});
 
 		// Permission and Event Listeners
-		s3Bucket.bucket.grantRead(lambdaConstructs.ingestionLambda);
-		s3Bucket.bucket.addEventNotification(EventType.OBJECT_CREATED, new s3n.LambdaDestination(lambdaConstructs.ingestionLambda), {
+		s3Bucket.bucket.grantRead(lambdas.ingestionLambda);
+		s3Bucket.bucket.addEventNotification(EventType.OBJECT_CREATED, new s3n.LambdaDestination(lambdas.ingestionLambda), {
 			prefix: 'upload/',
 		});
 	}
