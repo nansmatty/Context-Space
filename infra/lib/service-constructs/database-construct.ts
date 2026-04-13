@@ -26,8 +26,9 @@ export class DatabaseConstruct extends Construct {
 			securityGroups: [this.securityGroup],
 			credentials: rds.Credentials.fromGeneratedSecret('postgres'),
 			defaultDatabaseName: 'contextspace',
-			serverlessV2MinCapacity: 0.5,
+			serverlessV2MinCapacity: 0,
 			serverlessV2MaxCapacity: 2,
+
 			backup: {
 				retention: Duration.days(7),
 			},
