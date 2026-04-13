@@ -60,14 +60,7 @@ export class LambdaConstructs extends Construct {
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'ingestion-handler', 'index.ts'),
 			handler: 'handler',
 			timeout: Duration.seconds(30),
-			vpc: props.vpc,
-			securityGroups: [this.lambdaSecurityGroup],
-			environment: {
-				DB_HOST: props.dbCluster.clusterEndpoint.hostname,
-				DB_PORT: props.dbCluster.clusterEndpoint.port.toString(),
-				DB_NAME: 'contextspace',
-				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
-			},
+			memorySize: 512,
 		});
 
 		props.dbCluster.secret?.grantRead(this.ingestionLambda);
