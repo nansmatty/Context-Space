@@ -14,6 +14,18 @@ export class ContextSpaceStack extends cdk.Stack {
 		const vpc = new ec2.Vpc(this, 'ContextSpaceVPC', {
 			maxAzs: 2,
 			natGateways: 0,
+			subnetConfiguration: [
+				{
+					name: 'public',
+					subnetType: ec2.SubnetType.PUBLIC,
+					cidrMask: 24,
+				},
+				{
+					name: 'private',
+					subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+					cidrMask: 24,
+				},
+			],
 		});
 
 		// Construct Calls
