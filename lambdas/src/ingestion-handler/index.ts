@@ -2,13 +2,14 @@ import 'dotenv/config';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { chunkText, streamToBuffer } from '../utils/ingestion-utils';
 import { ParserService } from '../services/parser.service';
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const sqs = new SQSClient({});
 
 export const handler = async (event: any) => {
 	try {
 		const record = event.Records[0];
-
 		const bucket = record.s3.bucket.name;
 		const key = decodeURIComponent(record.s3.object.key);
 
@@ -18,13 +19,10 @@ export const handler = async (event: any) => {
 		});
 
 		const response = await s3Client.send(command);
-
 		const streamedText = await streamToBuffer(response.Body as NodeJS.ReadableStream);
-
 		const extension = key.split('.').pop()?.toLowerCase();
 
 		let extractedText = '';
-
 		const parserService = new ParserService();
 
 		switch (extension) {
@@ -51,8 +49,6 @@ export const handler = async (event: any) => {
 		}
 
 		const chunks = chunkText(extractedText);
-
-		console.log('Text chunking completed');
 
 		console.log({
 			fileName: key,
