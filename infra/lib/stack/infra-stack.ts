@@ -57,5 +57,11 @@ export class ContextSpaceStack extends cdk.Stack {
 		s3Bucket.bucket.addEventNotification(EventType.OBJECT_CREATED, new s3n.LambdaDestination(lambdas.ingestionLambda), {
 			prefix: 'upload/',
 		});
+
+		// Attaching env variables directly to a specific lambda
+		lambdas.ingestionLambda.addEnvironment('EMBEDDINGS_QUEUE_URL', sqsQueues.embeddingsQueue.queueUrl);
+
+		// Attaching permissions to lambda for sending messages to queue
+		sqsQueues.embeddingsQueue.grantSendMessages(lambdas.ingestionLambda);
 	}
 }
