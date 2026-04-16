@@ -1,9 +1,17 @@
 export const handler = async (event: any) => {
-	console.log('Received event:', JSON.stringify(event, null, 2));
-	// Process the event and generate embeddings
-	// For demonstration, we will just return a success message
-	return {
-		statusCode: 200,
-		body: JSON.stringify({ message: 'Embeddings generated successfully!' }),
-	};
+	try {
+		console.log('Received SQS event:', JSON.stringify(event, null, 2));
+
+		for (const record of event.Records) {
+			const envelope = JSON.parse(record.body);
+
+			console.log('Message type:', envelope.type);
+			console.log('Payload:', envelope.payload);
+		}
+
+		return { success: true };
+	} catch (error) {
+		console.error('Error processing SQS message:', error);
+		throw error;
+	}
 };
