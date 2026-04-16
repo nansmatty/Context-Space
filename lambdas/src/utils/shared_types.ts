@@ -1,7 +1,12 @@
 export interface EmbeddingsQueueMessage {
-	documentId: string;
-	userId: string;
-	chunkIndex: string;
-	totalChunks: string;
+	document_id: string;
+	user_id: string;
+	chunk_index: string;
+	total_chunks: string;
 	text: string;
+}
+
+export interface EmbeddingsQueueEnvelope {
+	type: 'EMBEDDINGS_REQUEST';
+	payload: EmbeddingsQueueMessage;
 }
