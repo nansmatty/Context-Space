@@ -3,9 +3,15 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { chunkText, streamToBuffer } from '../utils/ingestion-utils';
 import { ParserService } from '../services/parser.service';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
+import { EmbeddingsQueueMessage } from '../utils/shared_types';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const sqs = new SQSClient({});
+
+const queueUrl = process.env.EMBEDDINGS_QUEUE_URL!;
+if (!queueUrl) {
+	throw new Error('EMBEDDINGS_QUEUE_URL is missing');
+}
 
 export const handler = async (event: any) => {
 	try {
@@ -27,22 +33,10 @@ export const handler = async (event: any) => {
 
 		switch (extension) {
 			case 'pdf':
-				console.log('Starting PDF extraction');
-				const extractionStart = Date.now();
 				extractedText = await parserService.extractTextFromPDF(streamedText);
-				console.log('PDF extraction completed', {
-					durationMs: Date.now() - extractionStart,
-					extractedLength: extractedText.length,
-				});
 				break;
 			case 'txt':
-				console.log('Starting TXT extraction');
-				const extractionTextStart = Date.now();
 				extractedText = await parserService.extractTextFromBuffer(streamedText);
-				console.log('TXT extraction completed', {
-					durationMs: Date.now() - extractionTextStart,
-					extractedLength: extractedText.length,
-				});
 				break;
 			default:
 				throw new Error(`Unsupported file type: ${extension}`);
@@ -50,17 +44,28 @@ export const handler = async (event: any) => {
 
 		const chunks = chunkText(extractedText);
 
-		console.log({
-			fileName: key,
-			extension,
-			extractedLength: extractedText.length,
-			chunkCount: chunks.length,
-			bufferSizeBytes: streamedText.length,
-			bufferSizeKB: Math.round(streamedText.length / 1024),
-		});
+		for (let i = 0; i < chunks.length; i++) {
+			const message: EmbeddingsQueueMessage = {
+				document_id: key,
+				user_id: 'unknown', // Placeholder, replace with actual user ID if available
+				chunk_index: i.toString(),
+				total_chunks: chunks.length.toString(),
+				text: chunks[i],
+			};
+
+			await sqs.send(
+				new SendMessageCommand({
+					QueueUrl: queueUrl,
+					MessageBody: JSON.stringify(message),
+				}),
+			);
+		}
 
 		return {
 			success: true,
+			message: `Successfully processed ${chunks.length} chunks for document ${key}`,
+			documentId: key,
+			chunksProcessed: chunks.length,
 		};
 	} catch (error) {
 		console.error('Error processing S3 event:', error);
