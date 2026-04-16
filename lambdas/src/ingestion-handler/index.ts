@@ -4,7 +4,7 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { chunkText, streamToBuffer } from '../utils/ingestion-utils';
 import { ParserService } from '../services/parser.service';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
-import { EmbeddingsQueueMessage } from '../utils/shared_types';
+import { EmbeddingsQueueEnvelope, EmbeddingsQueueMessage } from '../utils/shared_types';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const sqs = new SQSClient({});
@@ -50,17 +50,22 @@ export const handler = async (event: any) => {
 			const message: EmbeddingsQueueMessage = {
 				document_id: documentId,
 				user_id: 'unknown', // Placeholder, replace with actual user ID if available
-				chunk_index: i.toString(),
-				total_chunks: chunks.length.toString(),
+				chunk_index: i,
+				total_chunks: chunks.length,
 				text: chunks[i],
 				s3_key: key,
 				file_type: extension ?? 'unknown',
 			};
 
+			const envelope: EmbeddingsQueueEnvelope = {
+				type: 'EMBEDDINGS_REQUEST',
+				payload: message,
+			};
+
 			await sqs.send(
 				new SendMessageCommand({
 					QueueUrl: queueUrl,
-					MessageBody: JSON.stringify(message),
+					MessageBody: JSON.stringify(envelope),
 				}),
 			);
 		}

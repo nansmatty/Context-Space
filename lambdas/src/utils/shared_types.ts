@@ -1,8 +1,8 @@
 export interface EmbeddingsQueueMessage {
 	document_id: string;
 	user_id: string;
-	chunk_index: string;
-	total_chunks: string;
+	chunk_index: number;
+	total_chunks: number;
 	text: string;
 	s3_key: string;
 	file_type: string;
