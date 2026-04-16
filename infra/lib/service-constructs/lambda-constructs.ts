@@ -15,6 +15,7 @@ interface LambdaConstructsProps {
 export class LambdaConstructs extends Construct {
 	public readonly ingestionLambda: NodejsFunction;
 	public readonly migrationLambda: NodejsFunction;
+	public readonly embeddingsLambda: NodejsFunction;
 	public readonly lambdaSecurityGroup: ec2.SecurityGroup;
 
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {
@@ -97,5 +98,12 @@ export class LambdaConstructs extends Construct {
 		});
 
 		props.dbCluster.secret?.grantRead(this.migrationLambda);
+
+		this.embeddingsLambda = new NodejsFunction(this, 'EmbeddingsLambda', {
+			runtime: Runtime.NODEJS_22_X,
+			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'embeddings-handler', 'index.ts'),
+			handler: 'handler',
+			timeout: Duration.seconds(30),
+		});
 	}
 }
