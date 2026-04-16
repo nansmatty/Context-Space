@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import crypto from 'node:crypto';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { chunkText, streamToBuffer } from '../utils/ingestion-utils';
 import { ParserService } from '../services/parser.service';
@@ -43,14 +44,17 @@ export const handler = async (event: any) => {
 		}
 
 		const chunks = chunkText(extractedText);
+		const documentId = crypto.randomUUID();
 
 		for (let i = 0; i < chunks.length; i++) {
 			const message: EmbeddingsQueueMessage = {
-				document_id: key,
+				document_id: documentId,
 				user_id: 'unknown', // Placeholder, replace with actual user ID if available
 				chunk_index: i.toString(),
 				total_chunks: chunks.length.toString(),
 				text: chunks[i],
+				s3_key: key,
+				file_type: extension ?? 'unknown',
 			};
 
 			await sqs.send(
@@ -64,7 +68,7 @@ export const handler = async (event: any) => {
 		return {
 			success: true,
 			message: `Successfully processed ${chunks.length} chunks for document ${key}`,
-			documentId: key,
+			documentId: documentId,
 			chunksProcessed: chunks.length,
 		};
 	} catch (error) {
