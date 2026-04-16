@@ -7,6 +7,7 @@ import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { DatabaseConstruct } from '../service-constructs/database-construct';
 import { SqsQueueConstruct } from '../service-constructs/sqs-queue-construct';
+import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export class ContextSpaceStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -63,5 +64,11 @@ export class ContextSpaceStack extends cdk.Stack {
 
 		// Attaching permissions to lambda for sending messages to queue
 		sqsQueues.embeddingsQueue.grantSendMessages(lambdas.ingestionLambda);
+
+		// Attaching add event source for the embeddings lambda to trigger on messages in the SQS queue
+		lambdas.embeddingsLambda.addEventSource(new SqsEventSource(sqsQueues.embeddingsQueue));
+
+		// Attaching permissions to lambda for consuming messages from queue
+		sqsQueues.embeddingsQueue.grantConsumeMessages(lambdas.embeddingsLambda);
 	}
 }
