@@ -4,6 +4,8 @@ export interface EmbeddingsQueueMessage {
 	chunk_index: string;
 	total_chunks: string;
 	text: string;
+	s3_key: string;
+	file_type: string;
 }
 
 export interface EmbeddingsQueueEnvelope {
