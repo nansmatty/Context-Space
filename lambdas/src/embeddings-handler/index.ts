@@ -1,5 +1,5 @@
 import { generateEmbeddings } from '../services/bedrock.service';
-import { DbInsertationPayload, EmbeddingsQueueEnvelope } from '../utils/shared_types';
+import { DbInsertionPayload, EmbeddingsQueueEnvelope } from '../utils/shared_types';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 
 const sqs = new SQSClient({});
@@ -21,13 +21,17 @@ export const handler = async (event: any) => {
 
 			const { chunk_index, text } = message.payload;
 
-			if (Number.isNaN(chunk_index)) {
+			if (!Number.isInteger(chunk_index)) {
 				throw new Error(`Invalid chunk_index: ${chunk_index}`);
+			}
+
+			if (!text?.trim()) {
+				throw new Error('Chunk text is empty');
 			}
 
 			const embedding = await generateEmbeddings(text);
 
-			const dbPayload: DbInsertationPayload = {
+			const dbPayload: DbInsertionPayload = {
 				payload: message.payload,
 				embedding: embedding,
 			};
@@ -39,10 +43,16 @@ export const handler = async (event: any) => {
 
 			await sqs.send(sendMessageCommand);
 
-			return { success: true };
+			console.log('Embedding generated and forwarded to DB queue:', {
+				document_id: message.payload.document_id,
+				chunk_index: message.payload.chunk_index,
+				embedding_length: embedding.length,
+			});
 		} catch (error) {
 			console.error('Error processing SQS message:', error);
 			throw error;
 		}
 	}
+
+	return { success: true };
 };

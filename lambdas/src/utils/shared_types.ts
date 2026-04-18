@@ -14,7 +14,7 @@ export interface EmbeddingsQueueEnvelope {
 	payload: EmbeddingsQueueMessage;
 }
 
-export interface DbInsertationPayload {
+export interface DbInsertionPayload {
 	payload: EmbeddingsQueueMessage;
 	embedding: number[];
 }
