@@ -17,6 +17,7 @@ export class LambdaConstructs extends Construct {
 	public readonly ingestionLambda: NodejsFunction;
 	public readonly migrationLambda: NodejsFunction;
 	public readonly embeddingsLambda: NodejsFunction;
+	public readonly dbInsertationLambda: NodejsFunction;
 	public readonly lambdaSecurityGroup: ec2.SecurityGroup;
 
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {

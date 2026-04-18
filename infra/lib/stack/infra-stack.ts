@@ -64,14 +64,18 @@ export class ContextSpaceStack extends cdk.Stack {
 
 		// Attaching env variables directly to a specific lambda
 		lambdas.ingestionLambda.addEnvironment('EMBEDDINGS_QUEUE_URL', sqsQueues.embeddingsQueue.queueUrl);
+		lambdas.embeddingsLambda.addEnvironment('DATABASE_DATA_QUEUE_URL', sqsQueues.databaseDataQueue.queueUrl);
 
 		// Attaching permissions to lambda for sending messages to queue
 		sqsQueues.embeddingsQueue.grantSendMessages(lambdas.ingestionLambda);
+		sqsQueues.databaseDataQueue.grantSendMessages(lambdas.embeddingsLambda);
 
 		// Attaching add event source for the embeddings lambda to trigger on messages in the SQS queue
 		lambdas.embeddingsLambda.addEventSource(new SqsEventSource(sqsQueues.embeddingsQueue));
+		lambdas.dbInsertationLambda.addEventSource(new SqsEventSource(sqsQueues.databaseDataQueue));
 
 		// Attaching permissions to lambda for consuming messages from queue
 		sqsQueues.embeddingsQueue.grantConsumeMessages(lambdas.embeddingsLambda);
+		sqsQueues.databaseDataQueue.grantConsumeMessages(lambdas.dbInsertationLambda);
 	}
 }
