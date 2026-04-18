@@ -5,6 +5,7 @@ import { Construct } from 'constructs';
 import * as path from 'path';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import * as iam from 'aws-cdk-lib/aws-iam';
 
 interface LambdaConstructsProps {
 	vpc: ec2.IVpc;
@@ -105,5 +106,14 @@ export class LambdaConstructs extends Construct {
 			handler: 'handler',
 			timeout: Duration.seconds(30),
 		});
+	}
+
+	grantOperationalAccess() {
+		this.embeddingsLambda.addToRolePolicy(
+			new iam.PolicyStatement({
+				actions: ['bedrock:InvokeModel'],
+				resources: ['*'],
+			}),
+		);
 	}
 }

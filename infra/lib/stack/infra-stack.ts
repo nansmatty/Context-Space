@@ -40,6 +40,9 @@ export class ContextSpaceStack extends cdk.Stack {
 		});
 		const sqsQueues = new SqsQueueConstruct(this, 'SqsQueueConstruct');
 
+		// Granting operational access to the lambda to call Bedrock
+		lambdas.grantOperationalAccess();
+
 		// Terminal Output logs
 		new cdk.CfnOutput(this, 'DbSecretArn', {
 			value: database.cluster.secret!.secretArn,
