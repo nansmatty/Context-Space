@@ -50,6 +50,7 @@ export const handler = async (event: any) => {
 			const message: EmbeddingsQueueMessage = {
 				document_id: documentId,
 				user_id: 'unknown', // Placeholder, replace with actual user ID if available
+				workspace_id: 'unknown', // Placeholder, replace with actual workspace ID if available
 				chunk_index: i,
 				total_chunks: chunks.length,
 				text: chunks[i],
