@@ -107,6 +107,21 @@ export class LambdaConstructs extends Construct {
 			handler: 'handler',
 			timeout: Duration.seconds(30),
 		});
+
+		this.dbInsertationLambda = new NodejsFunction(this, 'DbInsertationLambda', {
+			runtime: Runtime.NODEJS_22_X,
+			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'database-insertation-handler', 'index.ts'),
+			handler: 'handler',
+			timeout: Duration.seconds(30),
+			vpc: props.vpc,
+			securityGroups: [this.lambdaSecurityGroup],
+			environment: {
+				DB_HOST: props.dbCluster.clusterEndpoint.hostname,
+				DB_PORT: props.dbCluster.clusterEndpoint.port.toString(),
+				DB_NAME: 'contextspace',
+				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
+			},
+		});
 	}
 
 	grantOperationalAccess() {
