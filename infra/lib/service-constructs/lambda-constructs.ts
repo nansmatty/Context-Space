@@ -17,7 +17,7 @@ export class LambdaConstructs extends Construct {
 	public readonly ingestionLambda: NodejsFunction;
 	public readonly migrationLambda: NodejsFunction;
 	public readonly embeddingsLambda: NodejsFunction;
-	public readonly dbInsertationLambda: NodejsFunction;
+	public readonly dbInsertionLambda: NodejsFunction;
 	public readonly lambdaSecurityGroup: ec2.SecurityGroup;
 
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {
@@ -108,9 +108,9 @@ export class LambdaConstructs extends Construct {
 			timeout: Duration.seconds(30),
 		});
 
-		this.dbInsertationLambda = new NodejsFunction(this, 'DbInsertationLambda', {
+		this.dbInsertionLambda = new NodejsFunction(this, 'dbInsertionLambda', {
 			runtime: Runtime.NODEJS_22_X,
-			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'database-insertation-handler', 'index.ts'),
+			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'db-insertation-handler', 'index.ts'),
 			handler: 'handler',
 			timeout: Duration.seconds(30),
 			vpc: props.vpc,
