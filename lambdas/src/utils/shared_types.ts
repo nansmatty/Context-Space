@@ -1,5 +1,6 @@
 export interface EmbeddingsQueueMessage {
 	document_id: string;
+	workspace_id: string;
 	user_id: string;
 	chunk_index: number;
 	total_chunks: number;
@@ -11,4 +12,8 @@ export interface EmbeddingsQueueMessage {
 export interface EmbeddingsQueueEnvelope {
 	type: 'EMBEDDINGS_REQUEST';
 	payload: EmbeddingsQueueMessage;
+}
+
+export interface DbInsertationPayload extends EmbeddingsQueueMessage {
+	embedding: number[];
 }
