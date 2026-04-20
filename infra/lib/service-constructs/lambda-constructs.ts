@@ -72,8 +72,8 @@ export class LambdaConstructs extends Construct {
 			runtime: Runtime.NODEJS_22_X,
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'migration-handler', 'index.ts'),
 			handler: 'handler',
-			timeout: Duration.minutes(1),
-			memorySize: 512,
+			timeout: Duration.seconds(30),
+			memorySize: 256,
 			vpc: props.vpc,
 			securityGroups: [this.lambdaSecurityGroup],
 			environment: {
