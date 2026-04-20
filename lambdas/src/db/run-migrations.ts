@@ -32,7 +32,7 @@ export async function runMigrations() {
 	}
 }
 
-runMigrations().catch((err) => {
-	console.error('Migration run failed:', err);
-	process.exit(1);
-});
+// runMigrations().catch((err) => {
+// 	console.error('Migration run failed:', err);
+// 	process.exit(1);
+// });

@@ -29,7 +29,6 @@ export class DatabaseConstruct extends Construct {
 			serverlessV2MinCapacity: 0,
 			serverlessV2MaxCapacity: 2,
 			serverlessV2AutoPauseDuration: Duration.minutes(60),
-
 			backup: {
 				retention: Duration.days(7),
 			},
