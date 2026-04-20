@@ -31,8 +31,3 @@ export async function runMigrations() {
 		await dbClient.end();
 	}
 }
-
-// runMigrations().catch((err) => {
-// 	console.error('Migration run failed:', err);
-// 	process.exit(1);
-// });
