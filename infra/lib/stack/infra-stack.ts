@@ -30,6 +30,11 @@ export class ContextSpaceStack extends cdk.Stack {
 			],
 		});
 
+		// Adding VPC Endpoint for Secrets Manager to allow Lambdas to retrieve database credentials securely without going through the public internet.
+		vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
+			service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+		});
+
 		// Construct Calls
 		const s3Bucket = new S3BucketConstruct(this, 'S3BucketConstruct');
 		const database = new DatabaseConstruct(this, 'DatabaseConstruct', vpc);
