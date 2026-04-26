@@ -31,45 +31,17 @@ export class LambdaConstructs extends Construct {
 
 		props.dbSecurityGroup.addIngressRule(this.lambdaSecurityGroup, ec2.Port.tcp(5432), 'Allow Lambda to access Aurora PostgreSQL');
 
-		// This lambda setup is configured with PDF Parser package.
-		// this.ingestionLambda = new NodejsFunction(this, 'IngestionLambda', {
-		// 	runtime: Runtime.NODEJS_22_X,
-		// 	entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'ingestion-handler', 'index.ts'),
-		// 	handler: 'handler',
-		// 	depsLockFilePath: path.join(__dirname, '..', '..', '..', 'lambdas', 'package-lock.json'),
-		// 	projectRoot: path.join(__dirname, '..', '..', '..', 'lambdas'),
-		// 	timeout: Duration.seconds(30),
-		// 	bundling: {
-		// 		externalModules: ['@aws-sdk/*', '@smithy/*'],
-		// 		nodeModules: ['pdf-parse'],
-		// 		forceDockerBundling: true,
-		// 		commandHooks: {
-		// 			beforeBundling() {
-		// 				return [];
-		// 			},
-		// 			beforeInstall() {
-		// 				return [];
-		// 			},
-		// 			afterBundling(_inputDir: string, outputDir: string) {
-		// 				return [`rm -rf ${outputDir}/node_modules/.bin`];
-		// 			},
-		// 		},
-		// 	},
-		// });
-
 		// This lambda setup is configured with UnPDF package.
+		// And removed the code for PDFParser package and save it inside the uncommitted or ignored file lambdaConstructCodeForPDFParser.txt
 		this.ingestionLambda = new NodejsFunction(this, 'IngestionLambda', {
 			runtime: Runtime.NODEJS_22_X,
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'ingestion-handler', 'index.ts'),
 			handler: 'handler',
-			timeout: Duration.minutes(1),
+			timeout: Duration.seconds(45),
 			memorySize: 512,
 			vpc: props.vpc,
 			securityGroups: [this.lambdaSecurityGroup],
 			environment: {
-				DB_HOST: props.dbCluster.clusterEndpoint.hostname,
-				DB_PORT: props.dbCluster.clusterEndpoint.port.toString(),
-				DB_NAME: 'contextspace',
 				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
 			},
 		});
@@ -85,9 +57,6 @@ export class LambdaConstructs extends Construct {
 			vpc: props.vpc,
 			securityGroups: [this.lambdaSecurityGroup],
 			environment: {
-				DB_HOST: props.dbCluster.clusterEndpoint.hostname,
-				DB_PORT: props.dbCluster.clusterEndpoint.port.toString(),
-				DB_NAME: 'contextspace',
 				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
 			},
 			bundling: {
@@ -125,9 +94,6 @@ export class LambdaConstructs extends Construct {
 			vpc: props.vpc,
 			securityGroups: [this.lambdaSecurityGroup],
 			environment: {
-				DB_HOST: props.dbCluster.clusterEndpoint.hostname,
-				DB_PORT: props.dbCluster.clusterEndpoint.port.toString(),
-				DB_NAME: 'contextspace',
 				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
 			},
 		});
