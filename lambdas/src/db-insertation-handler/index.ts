@@ -1,5 +1,4 @@
 import { DbInsertionPayload } from '../utils/shared_types';
-
 import type { SQSEvent, SQSRecord } from 'aws-lambda';
 
 export const handler = async (event: SQSEvent) => {

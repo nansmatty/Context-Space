@@ -1,3 +1,4 @@
+import { SQSEvent, SQSRecord } from 'aws-lambda';
 import { generateEmbeddings } from '../services/bedrock.service';
 import { DbInsertionPayload, EmbeddingsQueueEnvelope } from '../utils/shared_types';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
@@ -9,8 +10,8 @@ if (!queueUrl) {
 	throw new Error('DATABASE_DATA_QUEUE_URL is missing');
 }
 
-export const handler = async (event: any) => {
-	for (const record of event.Records) {
+export const handler = async (event: SQSEvent) => {
+	for (const record of event.Records as SQSRecord[]) {
 		try {
 			const message = JSON.parse(record.body) as EmbeddingsQueueEnvelope;
 
