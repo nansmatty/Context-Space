@@ -39,11 +39,6 @@ export class LambdaConstructs extends Construct {
 			handler: 'handler',
 			timeout: Duration.seconds(45),
 			memorySize: 512,
-			vpc: props.vpc,
-			securityGroups: [this.lambdaSecurityGroup],
-			environment: {
-				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
-			},
 		});
 
 		props.dbCluster.secret?.grantRead(this.ingestionLambda);
