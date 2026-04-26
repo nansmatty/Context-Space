@@ -4,26 +4,20 @@ import { Client } from 'pg';
 type DbSecret = {
 	username: string;
 	password: string;
-	engine?: string;
-	host?: string;
-	port?: number | string;
-	dbname?: string;
+	host: string;
+	port: number | string;
+	dbname: string;
 };
+
+const secretsClient = new SecretsManagerClient({});
 
 async function getDBCredentials() {
 	const secretArn = process.env.DB_SECRET_ARN;
-	const host = process.env.DB_HOST;
-	const port = process.env.DB_PORT;
-	const database = process.env.DB_NAME;
 
 	if (!secretArn) throw new Error('Missing DB_SECRET_ARN');
-	if (!host) throw new Error('Missing DB_HOST');
-	if (!port) throw new Error('Missing DB_PORT');
-	if (!database) throw new Error('Missing DB_NAME');
 
-	const client = new SecretsManagerClient({});
 	const command = new GetSecretValueCommand({ SecretId: secretArn });
-	const response = await client.send(command);
+	const response = await secretsClient.send(command);
 
 	if (!response.SecretString) {
 		throw new Error('SecretString not found in Secrets Manager response.');
@@ -31,14 +25,14 @@ async function getDBCredentials() {
 
 	const secret = JSON.parse(response.SecretString) as DbSecret;
 
-	if (!secret.username || !secret.password) {
-		throw new Error('Database credentials missing in secret');
+	if (!secret.username || !secret.password || !secret.host || !secret.port || !secret.dbname) {
+		throw new Error('Database connection fields missing in secret');
 	}
 
 	return {
-		host,
-		port: Number(port),
-		database,
+		host: secret.host,
+		port: Number(secret.port),
+		database: secret.dbname,
 		user: secret.username,
 		password: secret.password,
 	};
