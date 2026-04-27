@@ -3,10 +3,12 @@ export interface EmbeddingsQueueMessage {
 	workspace_id: string;
 	user_id: string;
 	chunk_index: number;
-	total_chunks: number;
-	text: string;
+	chunk_count: number;
+	content: string;
 	s3_key: string;
-	file_type: string;
+	mime_type: string;
+	file_name: string;
+	file_size: number;
 }
 
 export interface EmbeddingsQueueEnvelope {

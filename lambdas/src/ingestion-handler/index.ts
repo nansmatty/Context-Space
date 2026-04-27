@@ -52,10 +52,12 @@ export const handler = async (event: any) => {
 				user_id: 'unknown', // Placeholder, replace with actual user ID if available
 				workspace_id: 'unknown', // Placeholder, replace with actual workspace ID if available
 				chunk_index: i,
-				total_chunks: chunks.length,
-				text: chunks[i],
+				chunk_count: chunks.length,
+				content: chunks[i],
 				s3_key: key,
-				file_type: extension ?? 'unknown',
+				mime_type: response.ContentType ?? 'application/octet-stream',
+				file_name: key.split('/').pop() ?? 'unknown',
+				file_size: streamedText.length,
 			};
 
 			const envelope: EmbeddingsQueueEnvelope = {
