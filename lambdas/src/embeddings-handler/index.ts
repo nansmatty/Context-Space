@@ -20,17 +20,17 @@ export const handler = async (event: SQSEvent) => {
 				continue;
 			}
 
-			const { chunk_index, text } = message.payload;
+			const { chunk_index, content } = message.payload;
 
 			if (!Number.isInteger(chunk_index)) {
 				throw new Error(`Invalid chunk_index: ${chunk_index}`);
 			}
 
-			if (!text?.trim()) {
-				throw new Error('Chunk text is empty');
+			if (!content?.trim()) {
+				throw new Error('Chunk content is empty');
 			}
 
-			const embedding = await generateEmbeddings(text);
+			const embedding = await generateEmbeddings(content);
 
 			const dbPayload: DbInsertionPayload = {
 				payload: message.payload,
