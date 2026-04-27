@@ -85,7 +85,8 @@ export class LambdaConstructs extends Construct {
 			runtime: Runtime.NODEJS_22_X,
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'db-insertation-handler', 'index.ts'),
 			handler: 'handler',
-			timeout: Duration.seconds(30),
+			timeout: Duration.minutes(2),
+			memorySize: 512,
 			vpc: props.vpc,
 			securityGroups: [this.lambdaSecurityGroup],
 			environment: {
