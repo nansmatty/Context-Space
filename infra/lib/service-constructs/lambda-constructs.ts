@@ -41,8 +41,6 @@ export class LambdaConstructs extends Construct {
 			memorySize: 512,
 		});
 
-		props.dbCluster.secret?.grantRead(this.ingestionLambda);
-
 		this.migrationLambda = new NodejsFunction(this, 'MigrationLambda', {
 			runtime: Runtime.NODEJS_22_X,
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'migration-handler', 'index.ts'),
@@ -93,6 +91,8 @@ export class LambdaConstructs extends Construct {
 				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
 			},
 		});
+
+		props.dbCluster.secret?.grantRead(this.dbInsertionLambda);
 	}
 
 	grantOperationalAccess() {
