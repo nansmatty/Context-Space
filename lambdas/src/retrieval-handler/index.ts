@@ -3,8 +3,6 @@ import { performSimilaritySearch } from '../services/retrieval.service';
 import { AskRequestBody } from '../utils/shared_types';
 
 export const handler = async (event: any) => {
-	console.log('Retrieval Lambda Invoked', event);
-
 	try {
 		const body: AskRequestBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
 
@@ -16,12 +14,6 @@ export const handler = async (event: any) => {
 				body: JSON.stringify({ message: 'Missing required fields: question, workspace_id, user_id' }),
 			};
 		}
-
-		console.log('Parsed Retrieval Request:', {
-			workspace_id,
-			user_id,
-			questionLength: question.length,
-		});
 
 		const embeddingOfQuestion = await generateEmbeddings(question);
 
