@@ -117,5 +117,12 @@ export class LambdaConstructs extends Construct {
 				resources: ['*'],
 			}),
 		);
+
+		this.retrievalLambda.addToRolePolicy(
+			new iam.PolicyStatement({
+				actions: ['bedrock:InvokeModel'],
+				resources: ['*'],
+			}),
+		);
 	}
 }
