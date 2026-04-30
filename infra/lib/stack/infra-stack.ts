@@ -8,11 +8,13 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { DatabaseConstruct } from '../service-constructs/database-construct';
 import { SqsQueueConstruct } from '../service-constructs/sqs-queue-construct';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 
 export class ContextSpaceStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
 
+		const api = new RestApi(this, 'ContextSpaceAPI', { restApiName: 'contextspace-api' });
 		const vpc = new ec2.Vpc(this, 'ContextSpaceVPC', {
 			maxAzs: 2,
 			natGateways: 0,
@@ -48,6 +50,10 @@ export class ContextSpaceStack extends cdk.Stack {
 			dbSecurityGroup: database.securityGroup,
 		});
 		const sqsQueues = new SqsQueueConstruct(this, 'SqsQueueConstruct');
+
+		// API Gateway integration with retrieval lambda for question answering
+		const askResource = api.root.addResource('ask');
+		askResource.addMethod('POST', new LambdaIntegration(lambdas.retrievalLambda));
 
 		// Granting operational access to the lambda to call Bedrock
 		lambdas.grantOperationalAccess();
