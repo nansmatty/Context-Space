@@ -5,7 +5,7 @@ const bedrockClient = new BedrockRuntimeClient({
 	region: process.env.AWS_REGION,
 });
 
-type TitamEmbeddingsResponse = {
+type TitanEmbeddingsResponse = {
 	embedding: number[];
 	inputTextTokenCount?: number;
 };
@@ -31,7 +31,11 @@ export async function generateEmbeddings(text: string): Promise<number[]> {
 	}
 
 	const rawBody = new TextDecoder().decode(response.body);
-	const parsedBody = JSON.parse(rawBody) as TitamEmbeddingsResponse;
+	const parsedBody = JSON.parse(rawBody) as TitanEmbeddingsResponse;
+
+	if (parsedBody.embedding.length !== 1024) {
+		throw new Error(`Invalid embedding dimension: expected 1024, got ${parsedBody.embedding.length}`);
+	}
 
 	if (!parsedBody.embedding || !Array.isArray(parsedBody.embedding)) {
 		throw new Error('Invalid response format: embedding not found or is not an array.');
