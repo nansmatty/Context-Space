@@ -1,4 +1,5 @@
 import { createDbClient } from '../db/db';
+import { toPGVector } from '../utils/general-utils';
 import { DbInsertionPayload } from '../utils/shared_types';
 import type { SQSEvent, SQSRecord } from 'aws-lambda';
 
@@ -16,7 +17,7 @@ export const handler = async (event: SQSEvent) => {
 				throw new Error(`Invalid embedding length: ${embedding.length}`);
 			}
 
-			const vectorString = `[${embedding.join(',')}]`;
+			const vectorString = toPGVector(embedding);
 			const token_count = Math.round(content.length / 4); // Rough estimate: 1 token ~ 4 characters
 
 			// Insert the data into documents table
