@@ -39,6 +39,10 @@ export class ContextSpaceStack extends cdk.Stack {
 			vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
 				service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
 			});
+
+			vpc.addInterfaceEndpoint('BedrockRuntimeEndpoint', {
+				service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME,
+			});
 		}
 
 		// Construct Calls
