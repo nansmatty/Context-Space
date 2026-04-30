@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { cleanModelAnswer } from '../utils/general-utils';
 
 const bedrockClient = new BedrockRuntimeClient({
 	region: process.env.AWS_REGION,
@@ -99,7 +100,7 @@ export async function generateAnswerFromContext(question: string, chunks: Retrie
 					content: userPrompt,
 				},
 			],
-			max_completion_tokens: 500,
+			max_completion_tokens: 1000,
 			temperature: 0.2,
 		}),
 	});
@@ -113,5 +114,6 @@ export async function generateAnswerFromContext(question: string, chunks: Retrie
 	const rawBody = new TextDecoder().decode(response.body);
 	const parsedBody = JSON.parse(rawBody);
 
-	return parsedBody.choices?.[0]?.message?.content ?? 'The provided context does not contain the answer to the question.';
+	const rawAnswer = parsedBody.choices?.[0]?.message?.content ?? 'The provided context does not contain the answer to the question.';
+	return cleanModelAnswer(rawAnswer);
 }
