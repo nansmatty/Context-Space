@@ -20,3 +20,9 @@ export interface DbInsertionPayload {
 	payload: EmbeddingsQueueMessage;
 	embedding: number[];
 }
+
+export interface AskRequestBody {
+	question?: string;
+	workspace_id?: string;
+	user_id?: string;
+}
