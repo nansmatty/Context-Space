@@ -1,3 +1,5 @@
+import { generateEmbeddings } from '../services/bedrock.service';
+import { performSimilaritySearch } from '../services/retrieval.service';
 import { AskRequestBody } from '../utils/shared_types';
 
 export const handler = async (event: any) => {
@@ -8,24 +10,40 @@ export const handler = async (event: any) => {
 
 		const { question, workspace_id, user_id } = body || {};
 
-		console.log('Parsed Retrieval Request:', { question, workspace_id, user_id });
-
-		if (!question || !workspace_id || !user_id) {
+		if (!question?.trim() || !workspace_id || !user_id) {
 			return {
 				statusCode: 400,
 				body: JSON.stringify({ message: 'Missing required fields: question, workspace_id, user_id' }),
 			};
 		}
 
+		console.log('Parsed Retrieval Request:', {
+			workspace_id,
+			user_id,
+			questionLength: question.length,
+		});
+
+		const embeddingOfQuestion = await generateEmbeddings(question);
+
+		const searchResults = await performSimilaritySearch({
+			questionEmbedding: embeddingOfQuestion,
+			workspaceId: workspace_id,
+			userId: user_id,
+			limit: 5,
+		});
+
 		return {
 			statusCode: 200,
-			body: JSON.stringify({ message: 'Retrieval Lambda executed successfully!' }),
+			body: JSON.stringify({
+				message: 'Retrieval completed successfully',
+				data: { question, matches: searchResults },
+			}),
 		};
-	} catch (error: any) {
+	} catch (error) {
 		console.error('Error in Retrieval Lambda:', error);
 		return {
 			statusCode: 500,
-			body: JSON.stringify({ message: 'Retrieval Lambda failed', error: error.message }),
+			body: JSON.stringify({ message: 'Retrieval Lambda failed' }),
 		};
 	}
 };
