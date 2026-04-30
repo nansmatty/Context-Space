@@ -1,4 +1,4 @@
-import { generateEmbeddings } from '../services/bedrock.service';
+import { generateAnswerFromContext, generateEmbeddings } from '../services/bedrock.service';
 import { performSimilaritySearch } from '../services/retrieval.service';
 import { AskRequestBody } from '../utils/shared_types';
 
@@ -24,11 +24,21 @@ export const handler = async (event: any) => {
 			limit: 5,
 		});
 
+		const answer = await generateAnswerFromContext(question, searchResults);
+
 		return {
 			statusCode: 200,
 			body: JSON.stringify({
-				message: 'Retrieval completed successfully',
-				data: { question, matches: searchResults },
+				message: 'Answer generated successfully',
+				data: {
+					question,
+					answer,
+					sources: searchResults.map((chunk) => ({
+						document_id: chunk.document_id,
+						chunk_index: chunk.chunk_index,
+						similarity: chunk.similarity,
+					})),
+				},
 			}),
 		};
 	} catch (error) {
