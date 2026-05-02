@@ -28,8 +28,8 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 			Body: file,
 			ContentType: contentType,
 			Metadata: {
-				originalName: originalName,
-				documentId: documentId,
+				originalname: originalName,
+				documentid: documentId,
 			},
 		});
 
@@ -42,6 +42,7 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 		logger.error(`Error uploading file to S3`, {
 			error: error.message,
 			originalName,
+			documentId,
 		});
 		throw new AppError('Failed to upload file to S3', 500);
 	}
