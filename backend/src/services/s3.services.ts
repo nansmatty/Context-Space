@@ -37,7 +37,7 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 
 		logger.info(`File uploaded successfully to S3 with key: ${uniqueKey}`);
 
-		return { key: uniqueKey, url: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uniqueKey}` };
+		return { key: uniqueKey, url: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uniqueKey}`, documentId };
 	} catch (error: any) {
 		logger.error(`Error uploading file to S3`, {
 			error: error.message,
