@@ -4,6 +4,7 @@ import { chunkText, streamToBuffer } from '../utils/ingestion-utils';
 import { ParserService } from '../services/parser.service';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { EmbeddingsQueueEnvelope, EmbeddingsQueueMessage } from '../utils/shared_types';
+import { extractDocumentIdFromKey } from '../utils/general-utils';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 const sqs = new SQSClient({});
@@ -26,18 +27,22 @@ export const handler = async (event: any) => {
 		});
 		const headResponse = await s3Client.send(headCommand);
 
-		const documentId = headResponse.Metadata?.documentid;
-
-		if (!documentId) {
-			throw new Error(`Missing documentid metadata for S3 object: ${key}`);
-		}
-
 		const getCommand = new GetObjectCommand({
 			Bucket: bucket,
 			Key: key,
 		});
 
 		const response = await s3Client.send(getCommand);
+
+		const metadataDocumentId = headResponse.Metadata?.documentid;
+		const keyDocumentId = extractDocumentIdFromKey(key);
+
+		const documentId = metadataDocumentId ?? keyDocumentId;
+
+		if (!documentId) {
+			throw new Error(`Missing documentId from both metadata and S3 key: ${key}`);
+		}
+
 		const streamedText = await streamToBuffer(response.Body as NodeJS.ReadableStream);
 		const extension = key.split('.').pop()?.toLowerCase();
 
