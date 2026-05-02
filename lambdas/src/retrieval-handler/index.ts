@@ -16,15 +16,39 @@ export const handler = async (event: any) => {
 		}
 
 		const embeddingOfQuestion = await generateEmbeddings(question);
+		const TOP_K = 3;
+		const SIMILARITY_THRESHOLD = 0.25;
 
 		const searchResults = await performSimilaritySearch({
 			questionEmbedding: embeddingOfQuestion,
 			workspaceId: workspace_id,
 			userId: user_id,
-			limit: 5,
+			limit: TOP_K,
 		});
 
-		const answer = await generateAnswerFromContext(question, searchResults);
+		const filtered = searchResults.filter((r) => r.similarity >= SIMILARITY_THRESHOLD);
+
+		console.log({
+			totalResults: searchResults.length,
+			filteredResults: filtered.length,
+			similarityScores: searchResults.map((r) => r.similarity),
+		});
+
+		if (filtered.length === 0) {
+			return {
+				statusCode: 200,
+				body: JSON.stringify({
+					message: 'No relevant context found for the question',
+					data: {
+						question,
+						answer: "I couldn't find relevant information in the uploaded documents.",
+						sources: [],
+					},
+				}),
+			};
+		}
+
+		const answer = await generateAnswerFromContext(question, filtered);
 
 		return {
 			statusCode: 200,
@@ -33,7 +57,7 @@ export const handler = async (event: any) => {
 				data: {
 					question,
 					answer,
-					sources: searchResults.map((chunk) => ({
+					sources: filtered.map((chunk) => ({
 						document_id: chunk.document_id,
 						chunk_index: chunk.chunk_index,
 						similarity: chunk.similarity,
