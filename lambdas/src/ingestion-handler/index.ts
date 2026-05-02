@@ -1,6 +1,5 @@
 import 'dotenv/config';
-import crypto from 'node:crypto';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { chunkText, streamToBuffer } from '../utils/ingestion-utils';
 import { ParserService } from '../services/parser.service';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
@@ -18,14 +17,27 @@ export const handler = async (event: any) => {
 	try {
 		const record = event.Records[0];
 		const bucket = record.s3.bucket.name;
-		const key = decodeURIComponent(record.s3.object.key);
+		const key = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
 
-		const command = new GetObjectCommand({
+		// extract the metadata from s3 object
+		const headCommand = new HeadObjectCommand({
+			Bucket: bucket,
+			Key: key,
+		});
+		const headResponse = await s3Client.send(headCommand);
+
+		const documentId = headResponse.Metadata?.documentid;
+
+		if (!documentId) {
+			throw new Error(`Missing documentid metadata for S3 object: ${key}`);
+		}
+
+		const getCommand = new GetObjectCommand({
 			Bucket: bucket,
 			Key: key,
 		});
 
-		const response = await s3Client.send(command);
+		const response = await s3Client.send(getCommand);
 		const streamedText = await streamToBuffer(response.Body as NodeJS.ReadableStream);
 		const extension = key.split('.').pop()?.toLowerCase();
 
@@ -44,7 +56,6 @@ export const handler = async (event: any) => {
 		}
 
 		const chunks = chunkText(extractedText);
-		const documentId = crypto.randomUUID();
 
 		for (let i = 0; i < chunks.length; i++) {
 			const message: EmbeddingsQueueMessage = {
