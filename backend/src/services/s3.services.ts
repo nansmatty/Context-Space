@@ -2,7 +2,6 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/global-error-handler';
 import path from 'path';
-import { randomUUID } from 'crypto';
 
 const s3 = new S3Client({
 	region: process.env.AWS_REGION,
@@ -12,7 +11,7 @@ const s3 = new S3Client({
 	},
 });
 
-export const uploadToS3 = async (file: Buffer, originalName: string, contentType: string) => {
+export const uploadToS3 = async (file: Buffer, originalName: string, contentType: string, documentId: string) => {
 	try {
 		const ext = path.extname(originalName);
 		const baseName = path
@@ -20,13 +19,18 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 			.replace(/[^a-zA-Z0-9-_]/g, '-')
 			.replace(/-+/g, '-')
 			.toLowerCase();
-		const uniqueKey = `upload/${baseName}-${randomUUID()}${ext}`;
+
+		const uniqueKey = `upload/${documentId}/${baseName}${ext}`;
 
 		const params = new PutObjectCommand({
 			Bucket: process.env.S3_BUCKET_NAME!,
 			Key: uniqueKey,
 			Body: file,
 			ContentType: contentType,
+			Metadata: {
+				originalName: originalName,
+				documentId: documentId,
+			},
 		});
 
 		await s3.send(params);
