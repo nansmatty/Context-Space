@@ -8,3 +8,14 @@ export function cleanModelAnswer(text: string): string {
 		.replace(/<analysis>[\s\S]*?<\/analysis>/gi, '')
 		.trim();
 }
+
+export const extractDocumentIdFromKey = (key: string): string | undefined => {
+	const parts = key.split('/');
+
+	// For key format: upload/<documentId>/<filename>
+	if (parts[0] === 'upload' && parts[1]) {
+		return parts[1];
+	}
+
+	return undefined;
+};
