@@ -59,10 +59,23 @@ ContextSpace is a serverless, scalable RAG system that enables users to upload d
 └─────────────┘        │
                        ▼
                   Amazon Bedrock ──────▶ Answer Generation
-                  (OpenAI GPT)
+                  (LLM: GPT-OSS-20B via Amazon Bedrock)
 ```
 
 ---
+
+### Document Identity
+
+Each uploaded file is assigned a unique `document_id` at upload time.
+This ID is propagated through:
+
+- S3 object key / metadata
+- Ingestion Lambda
+- SQS messages
+- Embeddings pipeline
+- Aurora database
+
+This ensures consistency across the entire pipeline.
 
 ## 🚀 Features
 
@@ -95,7 +108,7 @@ ContextSpace is a serverless, scalable RAG system that enables users to upload d
 - **Runtime**: Node.js 22.x
 - **Framework**: Express.js
 - **Language**: TypeScript 6.0+
-- **Database (Metadata)**: MongoDB with Mongoose
+- **Database (Metadata)**: MongoDB with Mongoose (planned for metadata and user system)
 - **File Upload**: Multer
 - **Logging**: Winston
 
@@ -510,14 +523,12 @@ cdk destroy       # Destroy stack
 
 ---
 
-## 🐛 Known Issues & Limitations
+## ⚠️ Limitations (MVP)
 
-- No user authentication (MVP phase)
-- `user_id` and `workspace_id` are placeholders in ingestion
-- No frontend interface
-- Limited to PDF and TXT documents
-- Maximum file size: 10MB
-- No real-time processing status updates
+- No authentication (all requests are public)
+- No real-time status tracking
+- No retry/visibility control for failed chunks
+- Retrieval quality is basic (top-k similarity only)
 
 ---
 
