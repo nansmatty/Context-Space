@@ -33,6 +33,15 @@ export const handler = async (event: SQSEvent) => {
 				VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (document_id, chunk_index) DO NOTHING
 			`;
 			await client.query(chunkInsertQuery, [document_id, user_id, workspace_id, chunk_index, content, token_count, vectorString]);
+
+			const countChunksQuery = `SELECT COUNT(*)::int AS inserted_count FROM chunks WHERE document_id = $1`;
+			const countResult = await client.query(countChunksQuery, [document_id]);
+			const insertedChunks = countResult.rows[0].inserted_count;
+
+			if (insertedChunks === chunk_count) {
+				const updateDocStatusQuery = `UPDATE documents SET status = 'completed', updated_at = NOW() WHERE id = $1`;
+				await client.query(updateDocStatusQuery, [document_id]);
+			}
 		}
 	} catch (error) {
 		console.error('DB insertion failed:', error);
