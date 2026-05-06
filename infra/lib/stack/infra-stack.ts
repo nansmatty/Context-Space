@@ -43,6 +43,10 @@ export class ContextSpaceStack extends cdk.Stack {
 			vpc.addInterfaceEndpoint('BedrockRuntimeEndpoint', {
 				service: ec2.InterfaceVpcEndpointAwsService.BEDROCK_RUNTIME,
 			});
+
+			vpc.addInterfaceEndpoint('SqsEndpoint', {
+				service: ec2.InterfaceVpcEndpointAwsService.SQS,
+			});
 		}
 
 		// Construct Calls
@@ -84,17 +88,21 @@ export class ContextSpaceStack extends cdk.Stack {
 		// Attaching env variables directly to a specific lambda
 		lambdas.ingestionLambda.addEnvironment('EMBEDDINGS_QUEUE_URL', sqsQueues.embeddingsQueue.queueUrl);
 		lambdas.embeddingsLambda.addEnvironment('DATABASE_DATA_QUEUE_URL', sqsQueues.databaseDataQueue.queueUrl);
+		lambdas.dbInsertionLambda.addEnvironment('FINALIZE_QUEUE_URL', sqsQueues.finalizeQueue.queueUrl);
 
 		// Attaching permissions to lambda for sending messages to queue
 		sqsQueues.embeddingsQueue.grantSendMessages(lambdas.ingestionLambda);
 		sqsQueues.databaseDataQueue.grantSendMessages(lambdas.embeddingsLambda);
+		sqsQueues.finalizeQueue.grantSendMessages(lambdas.dbInsertionLambda);
 
-		// Attaching add event source for the embeddings lambda to trigger on messages in the SQS queue
+		// Attaching add event source for lambdas to trigger on messages in the SQS queue
 		lambdas.embeddingsLambda.addEventSource(new SqsEventSource(sqsQueues.embeddingsQueue));
 		lambdas.dbInsertionLambda.addEventSource(new SqsEventSource(sqsQueues.databaseDataQueue));
+		lambdas.finalizeLambda.addEventSource(new SqsEventSource(sqsQueues.finalizeQueue));
 
 		// Attaching permissions to lambda for consuming messages from queue
 		sqsQueues.embeddingsQueue.grantConsumeMessages(lambdas.embeddingsLambda);
 		sqsQueues.databaseDataQueue.grantConsumeMessages(lambdas.dbInsertionLambda);
+		sqsQueues.finalizeQueue.grantConsumeMessages(lambdas.finalizeLambda);
 	}
 }
