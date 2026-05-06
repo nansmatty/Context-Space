@@ -29,5 +29,7 @@ export async function performSimilaritySearch({ questionEmbedding, workspaceId, 
 	} catch (error) {
 		console.error('Error performing similarity search:', error);
 		throw error;
+	} finally {
+		await dbClient.end();
 	}
 }
