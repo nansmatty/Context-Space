@@ -19,6 +19,7 @@ export class LambdaConstructs extends Construct {
 	public readonly embeddingsLambda: NodejsFunction;
 	public readonly dbInsertionLambda: NodejsFunction;
 	public readonly retrievalLambda: NodejsFunction;
+	public readonly finalizeLambda: NodejsFunction;
 	public readonly lambdaSecurityGroup: ec2.SecurityGroup;
 
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {
@@ -108,6 +109,20 @@ export class LambdaConstructs extends Construct {
 			},
 		});
 		props.dbCluster.secret?.grantRead(this.retrievalLambda);
+
+		this.finalizeLambda = new NodejsFunction(this, 'FinalizeLambda', {
+			runtime: Runtime.NODEJS_22_X,
+			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'finalizer-data-handler', 'index.ts'),
+			handler: 'handler',
+			timeout: Duration.minutes(2),
+			memorySize: 512,
+			vpc: props.vpc,
+			securityGroups: [this.lambdaSecurityGroup],
+			environment: {
+				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
+			},
+		});
+		props.dbCluster.secret?.grantRead(this.finalizeLambda);
 	}
 
 	grantOperationalAccess() {
