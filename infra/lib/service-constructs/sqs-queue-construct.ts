@@ -5,6 +5,7 @@ import { Duration, RemovalPolicy } from 'aws-cdk-lib';
 export class SqsQueueConstruct extends Construct {
 	public readonly embeddingsQueue: sqs.Queue;
 	public readonly databaseDataQueue: sqs.Queue;
+	public readonly finalizeQueue: sqs.Queue;
 
 	constructor(scope: Construct, id: string) {
 		super(scope, id);
@@ -30,6 +31,21 @@ export class SqsQueueConstruct extends Construct {
 			removalPolicy: RemovalPolicy.DESTROY,
 			deadLetterQueue: {
 				queue: new sqs.Queue(this, 'databaseDataDLQ', {
+					retentionPeriod: Duration.days(7),
+					removalPolicy: RemovalPolicy.DESTROY,
+				}),
+				maxReceiveCount: 5,
+			},
+		});
+
+		this.finalizeQueue = new sqs.Queue(this, 'FinalizeQueue', {
+			queueName: 'contextspace-finalize-queue',
+			visibilityTimeout: Duration.minutes(2),
+			retentionPeriod: Duration.days(7),
+			removalPolicy: RemovalPolicy.DESTROY,
+			deadLetterQueue: {
+				queue: new sqs.Queue(this, 'finalizeDLQ', {
+					queueName: 'contextspace-finalize-dlq',
 					retentionPeriod: Duration.days(7),
 					removalPolicy: RemovalPolicy.DESTROY,
 				}),
