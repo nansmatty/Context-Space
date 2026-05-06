@@ -1,7 +1,15 @@
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { createDbClient } from '../db/db';
 import { toPGVector } from '../utils/general-utils';
 import { DbInsertionPayload } from '../utils/shared_types';
 import type { SQSEvent, SQSRecord } from 'aws-lambda';
+
+const sqs = new SQSClient({});
+
+const queueUrl = process.env.FINALIZE_QUEUE_URL!;
+if (!queueUrl) {
+	throw new Error('FINALIZE_QUEUE_URL is missing');
+}
 
 export const handler = async (event: SQSEvent) => {
 	const client = await createDbClient();
@@ -34,14 +42,20 @@ export const handler = async (event: SQSEvent) => {
 			`;
 			await client.query(chunkInsertQuery, [document_id, user_id, workspace_id, chunk_index, content, token_count, vectorString]);
 
-			const countChunksQuery = `SELECT COUNT(*)::int AS inserted_count FROM chunks WHERE document_id = $1`;
-			const countResult = await client.query(countChunksQuery, [document_id]);
-			const insertedChunks = countResult.rows[0].inserted_count;
-
-			if (insertedChunks === chunk_count) {
-				const updateDocStatusQuery = `UPDATE documents SET status = 'completed', updated_at = NOW() WHERE id = $1`;
-				await client.query(updateDocStatusQuery, [document_id]);
-			}
+			await sqs.send(
+				new SendMessageCommand({
+					QueueUrl: queueUrl,
+					MessageBody: JSON.stringify({
+						type: 'DOCUMENT_FINALIZE_CHECK',
+						payload: {
+							document_id,
+							user_id,
+							workspace_id,
+							chunk_count,
+						},
+					}),
+				}),
+			);
 		}
 	} catch (error) {
 		console.error('DB insertion failed:', error);
