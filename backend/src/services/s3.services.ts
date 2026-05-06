@@ -3,13 +3,7 @@ import { logger } from '../utils/logger';
 import { AppError } from '../utils/global-error-handler';
 import path from 'path';
 
-const s3 = new S3Client({
-	region: process.env.AWS_REGION,
-	credentials: {
-		accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-		secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-	},
-});
+const s3 = new S3Client({ region: process.env.AWS_REGION });
 
 export const uploadToS3 = async (file: Buffer, originalName: string, contentType: string, documentId: string) => {
 	try {
