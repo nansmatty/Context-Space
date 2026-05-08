@@ -15,10 +15,11 @@ export async function performSimilaritySearch({ questionEmbedding, workspaceId, 
 	try {
 		// Construct the SQL query for similarity search
 		const query = `
-    SELECT id, document_id, chunk_index, content, 1 - (embedding <=> $1::vector) AS similarity
-    FROM chunks
-    WHERE workspace_id = $2 AND user_id = $3 AND embedding IS NOT NULL
-    ORDER BY embedding <=> $1::vector
+    SELECT c.id, c.document_id, c.chunk_index, c.content, 1 - (c.embedding <=> $1::vector) AS similarity
+    FROM chunks c
+		JOIN documents d ON c.document_id = d.id
+    WHERE c.workspace_id = $2 AND c.user_id = $3 AND d.status = 'completed' AND c.embedding IS NOT NULL
+    ORDER BY c.embedding <=> $1::vector
     LIMIT $4
   `;
 

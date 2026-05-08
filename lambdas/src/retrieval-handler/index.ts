@@ -1,6 +1,5 @@
 import { generateAnswerFromContext, generateEmbeddings } from '../services/bedrock.service';
 import { performSimilaritySearch } from '../services/retrieval.service';
-import { AskRequestBody } from '../utils/shared_types';
 import { askRequestSchema } from '../utils/validation';
 
 export const handler = async (event: any) => {
