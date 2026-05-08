@@ -2,6 +2,7 @@ import { SQSEvent } from 'aws-lambda';
 import { createDbClient } from '../db/db';
 import { parseSqsRecord } from '../utils/general-utils';
 import { FinalizerMessage } from '../utils/shared_types';
+import { finalizerMessageSchema } from '../utils/validation';
 
 export const handler = async (event: SQSEvent) => {
 	const client = await createDbClient();
@@ -9,13 +10,10 @@ export const handler = async (event: SQSEvent) => {
 	for (const record of event.Records) {
 		try {
 			const body = parseSqsRecord(record) as FinalizerMessage;
+			const parsed = finalizerMessageSchema.parse(body);
 
-			// if (body.type !== 'DOCUMENT_FINALIZE_CHECK') {
-			// 	throw new Error(`Invalid finalizer message type: ${body.type}`);
-			// }
-
-			if (body.type === 'DOCUMENT_PROCESSING_FAILED') {
-				const { document_id, stage, error_message } = body.payload;
+			if (parsed.type === 'DOCUMENT_PROCESSING_FAILED') {
+				const { document_id, stage, error_message } = parsed.payload;
 
 				if (!document_id || !stage || !error_message) {
 					throw new Error('Missing required fields in failed document payload');
@@ -36,7 +34,7 @@ export const handler = async (event: SQSEvent) => {
 				continue;
 			}
 
-			const { document_id, user_id, workspace_id, chunk_count } = body.payload;
+			const { document_id, user_id, workspace_id, chunk_count } = parsed.payload;
 
 			if (!document_id || !user_id || !workspace_id || !chunk_count) {
 				throw new Error('Missing required fields in finalizer message payload');
