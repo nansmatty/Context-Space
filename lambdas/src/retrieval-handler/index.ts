@@ -1,12 +1,20 @@
 import { generateAnswerFromContext, generateEmbeddings } from '../services/bedrock.service';
 import { performSimilaritySearch } from '../services/retrieval.service';
 import { AskRequestBody } from '../utils/shared_types';
+import { askRequestSchema } from '../utils/validation';
 
 export const handler = async (event: any) => {
 	try {
-		const body: AskRequestBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+		const parsed = askRequestSchema.safeParse(JSON.parse(event.body));
+		if (!parsed.success) {
+			console.error('Validation failed', { errors: parsed.error.message });
+			return {
+				statusCode: 400,
+				body: JSON.stringify({ message: 'Invalid request body', errors: parsed.error.message }),
+			};
+		}
 
-		const { question, workspace_id, user_id } = body || {};
+		const { question, workspace_id, user_id } = parsed.data;
 
 		if (!question?.trim() || !workspace_id || !user_id) {
 			return {
