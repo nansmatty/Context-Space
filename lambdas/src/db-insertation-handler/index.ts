@@ -1,6 +1,6 @@
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { createDbClient } from '../db/db';
-import { toPGVector } from '../utils/general-utils';
+import { parseSqsRecord, toPGVector } from '../utils/general-utils';
 import { DbInsertionPayload } from '../utils/shared_types';
 import type { SQSEvent, SQSRecord } from 'aws-lambda';
 
@@ -13,6 +13,7 @@ if (!queueUrl) {
 
 export const handler = async (event: SQSEvent) => {
 	const client = await createDbClient();
+	let currentDocumentId: string | null = null;
 
 	try {
 		for (const record of event.Records) {
@@ -20,6 +21,7 @@ export const handler = async (event: SQSEvent) => {
 
 			const { document_id, workspace_id, user_id, chunk_index, chunk_count, content, s3_key, mime_type, file_name, file_size } = body.payload;
 			const embedding: number[] = body.embedding;
+			currentDocumentId = document_id;
 
 			if (embedding.length !== 1024) {
 				throw new Error(`Invalid embedding length: ${embedding.length}`);
@@ -57,24 +59,25 @@ export const handler = async (event: SQSEvent) => {
 				}),
 			);
 		}
-	} catch (error) {
-		console.error('DB insertion failed:', error);
+	} catch (error: any) {
+		console.error(`DB insertion failed for document ${currentDocumentId}:`, error);
+		if (currentDocumentId) {
+			await markDocumentAsFailed(client, currentDocumentId, error.message ?? 'DB insertion failed');
+		}
 		throw error;
 	} finally {
 		await client.end();
 	}
 };
 
-function parseSqsRecord(record: SQSRecord) {
-	try {
-		return JSON.parse(record.body);
-	} catch (error) {
-		console.error('Failed to parse SQS record body', {
-			bodyId: record.messageId,
-			body: record.body,
-			error,
-		});
-
-		throw error;
-	}
+async function markDocumentAsFailed(client: any, documentId: string, errorMessage: string) {
+	const updateQuery = `
+		UPDATE documents
+		SET status = 'failed',
+			updated_at = now(),
+			error_message = $2
+		WHERE id = $1
+			AND status != 'completed'
+	`;
+	await client.query(updateQuery, [documentId, errorMessage]);
 }
