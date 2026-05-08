@@ -2,15 +2,26 @@ import { SQSEvent, SQSRecord } from 'aws-lambda';
 import { createDbClient } from '../db/db';
 import { parseSqsRecord } from '../utils/general-utils';
 
-type FinalizerMessage = {
-	type: 'DOCUMENT_FINALIZE_CHECK';
-	payload: {
-		document_id: string;
-		user_id: string;
-		workspace_id: string;
-		chunk_count: number;
-	};
-};
+type FinalizerMessage =
+	| {
+			type: 'DOCUMENT_FINALIZE_CHECK';
+			payload: {
+				document_id: string;
+				user_id: string;
+				workspace_id: string;
+				chunk_count: number;
+			};
+	  }
+	| {
+			type: 'DOCUMENT_PROCESSING_FAILED';
+			payload: {
+				document_id: string;
+				user_id: string;
+				workspace_id: string;
+				stage: string;
+				error_message: string;
+			};
+	  };
 
 export const handler = async (event: SQSEvent) => {
 	const client = await createDbClient();
@@ -19,8 +30,23 @@ export const handler = async (event: SQSEvent) => {
 		for (const record of event.Records) {
 			const body = parseSqsRecord(record) as FinalizerMessage;
 
-			if (body.type !== 'DOCUMENT_FINALIZE_CHECK') {
-				throw new Error(`Invalid finalizer message type: ${body.type}`);
+			// if (body.type !== 'DOCUMENT_FINALIZE_CHECK') {
+			// 	throw new Error(`Invalid finalizer message type: ${body.type}`);
+			// }
+
+			if (body.type === 'DOCUMENT_PROCESSING_FAILED') {
+				await client.query(
+					`
+						UPDATE documents
+						SET status = 'failed',
+							error_message = $2,
+							updated_at = now()
+						WHERE id = $1
+							AND status != 'completed'
+					`,
+					[body.payload.document_id, `${body.payload.stage}: ${body.payload.error_message}`],
+				);
+				continue;
 			}
 
 			const { document_id, user_id, workspace_id, chunk_count } = body.payload;
