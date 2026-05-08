@@ -18,10 +18,12 @@ if (!finalizerQueueUrl) {
 
 export const handler = async (event: SQSEvent) => {
 	for (const record of event.Records as SQSRecord[]) {
-		const rawBody = JSON.parse(record.body) as EmbeddingsQueueEnvelope;
-		let body = embeddingsQueueMessageSchema.parse(rawBody);
+		let body: EmbeddingsQueueEnvelope | null = null;
 
 		try {
+			const rawBody = JSON.parse(record.body) as EmbeddingsQueueEnvelope;
+			body = embeddingsQueueMessageSchema.parse(rawBody);
+
 			if (body.type !== 'EMBEDDINGS_REQUEST') {
 				console.warn(`Skipping message with unsupported type: ${body.type}`);
 				continue;
@@ -59,7 +61,7 @@ export const handler = async (event: SQSEvent) => {
 		} catch (error) {
 			console.error('Error processing SQS message:', error);
 
-			if (body.type === 'EMBEDDINGS_REQUEST') {
+			if (body && body.type === 'EMBEDDINGS_REQUEST') {
 				await sendProcessingFailedMessage({
 					document_id: body.payload.document_id,
 					user_id: body.payload.user_id,

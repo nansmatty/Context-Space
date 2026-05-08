@@ -7,8 +7,8 @@ import { finalizerMessageSchema } from '../utils/validation';
 export const handler = async (event: SQSEvent) => {
 	const client = await createDbClient();
 
-	for (const record of event.Records) {
-		try {
+	try {
+		for (const record of event.Records) {
 			const body = parseSqsRecord(record) as FinalizerMessage;
 			const parsed = finalizerMessageSchema.parse(body);
 
@@ -73,11 +73,11 @@ export const handler = async (event: SQSEvent) => {
 			}
 
 			console.log(`Document finalized: ${document_id}`);
-		} catch (error) {
-			console.error('Error processing event:', error);
-			throw error;
-		} finally {
-			await client.end();
 		}
+	} catch (error) {
+		console.error('Error processing event:', error);
+		throw error;
+	} finally {
+		await client.end();
 	}
 };

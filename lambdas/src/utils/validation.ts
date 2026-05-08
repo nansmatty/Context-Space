@@ -34,7 +34,7 @@ export const embeddingsQueueMessageSchema = z.object({
 		document_id: z.uuid(),
 		workspace_id: z.string().trim().min(1, 'Workspace ID is required'),
 		user_id: z.string().trim().min(1, 'User ID is required'),
-		chunk_index: z.number().int().positive('Chunk index must be a positive integer'),
+		chunk_index: z.number().int().nonnegative('Chunk index must be 0 or greater'),
 		chunk_count: z.number().int().positive('Chunk count must be a positive integer'),
 		content: z.string().trim().min(1, 'Content is required'),
 		s3_key: z.string().trim().min(1, 'S3 key is required'),
