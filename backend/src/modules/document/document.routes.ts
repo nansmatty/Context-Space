@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { uploadDocument } from './document.controller';
+import { askQuestion, uploadDocument } from './document.controller';
 import { AppError } from '../../utils/global-error-handler';
 
 const router = Router();
@@ -18,5 +18,6 @@ const upload = multer({
 });
 
 router.post('/upload', upload.single('file'), uploadDocument);
+router.post('/ask', askQuestion);
 
 export default router;
