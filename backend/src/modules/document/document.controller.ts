@@ -22,3 +22,31 @@ export const uploadDocument = async (req: Request, res: Response, next: NextFunc
 		next(error);
 	}
 };
+
+export const askQuestion = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { question, user_id, workspace_id } = req.body;
+
+		if (!question || !user_id || !workspace_id) {
+			throw new AppError('Missing required fields', 400);
+		}
+
+		const response = await fetch(process.env.ASK_API_GATEWAY_URL!, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				question,
+				user_id,
+				workspace_id,
+			}),
+		});
+
+		const data = await response.json();
+
+		return res.status(response.status).json(data);
+	} catch (error) {
+		next(error);
+	}
+};
