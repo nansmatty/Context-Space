@@ -11,22 +11,6 @@ export interface EmbeddingsQueueMessage {
 	file_size: number;
 }
 
-export interface EmbeddingsQueueEnvelope {
-	type: 'EMBEDDINGS_REQUEST';
-	payload: EmbeddingsQueueMessage;
-}
-
-export interface DbInsertionPayload {
-	payload: EmbeddingsQueueMessage;
-	embedding: number[];
-}
-
-export interface AskRequestBody {
-	question?: string;
-	workspace_id?: string;
-	user_id?: string;
-}
-
 export type FinalizerMessage =
 	| {
 			type: 'DOCUMENT_FINALIZE_CHECK';
@@ -47,3 +31,19 @@ export type FinalizerMessage =
 				error_message: string;
 			};
 	  };
+
+export interface EmbeddingsQueueEnvelope {
+	type: 'EMBEDDINGS_REQUEST';
+	payload: EmbeddingsQueueMessage;
+}
+
+export interface DbInsertionPayload {
+	payload: EmbeddingsQueueMessage;
+	embedding: number[];
+}
+
+export interface AskRequestBody {
+	question?: string;
+	workspace_id?: string;
+	user_id?: string;
+}
