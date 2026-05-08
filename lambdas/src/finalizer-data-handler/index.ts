@@ -1,5 +1,6 @@
 import { SQSEvent, SQSRecord } from 'aws-lambda';
 import { createDbClient } from '../db/db';
+import { parseSqsRecord } from '../utils/general-utils';
 
 type FinalizerMessage = {
 	type: 'DOCUMENT_FINALIZE_CHECK';
@@ -69,17 +70,3 @@ export const handler = async (event: SQSEvent) => {
 		await client.end();
 	}
 };
-
-function parseSqsRecord(record: SQSRecord) {
-	try {
-		return JSON.parse(record.body);
-	} catch (error) {
-		console.error('Failed to parse SQS record body', {
-			messageId: record.messageId,
-			body: record.body,
-			error,
-		});
-
-		throw error;
-	}
-}
