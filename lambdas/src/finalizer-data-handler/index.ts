@@ -1,33 +1,13 @@
-import { SQSEvent, SQSRecord } from 'aws-lambda';
+import { SQSEvent } from 'aws-lambda';
 import { createDbClient } from '../db/db';
 import { parseSqsRecord } from '../utils/general-utils';
-
-type FinalizerMessage =
-	| {
-			type: 'DOCUMENT_FINALIZE_CHECK';
-			payload: {
-				document_id: string;
-				user_id: string;
-				workspace_id: string;
-				chunk_count: number;
-			};
-	  }
-	| {
-			type: 'DOCUMENT_PROCESSING_FAILED';
-			payload: {
-				document_id: string;
-				user_id: string;
-				workspace_id: string;
-				stage: string;
-				error_message: string;
-			};
-	  };
+import { FinalizerMessage } from '../utils/shared_types';
 
 export const handler = async (event: SQSEvent) => {
 	const client = await createDbClient();
 
-	try {
-		for (const record of event.Records) {
+	for (const record of event.Records) {
+		try {
 			const body = parseSqsRecord(record) as FinalizerMessage;
 
 			// if (body.type !== 'DOCUMENT_FINALIZE_CHECK') {
@@ -35,6 +15,12 @@ export const handler = async (event: SQSEvent) => {
 			// }
 
 			if (body.type === 'DOCUMENT_PROCESSING_FAILED') {
+				const { document_id, stage, error_message } = body.payload;
+
+				if (!document_id || !stage || !error_message) {
+					throw new Error('Missing required fields in failed document payload');
+				}
+
 				await client.query(
 					`
 						UPDATE documents
@@ -44,8 +30,9 @@ export const handler = async (event: SQSEvent) => {
 						WHERE id = $1
 							AND status != 'completed'
 					`,
-					[body.payload.document_id, `${body.payload.stage}: ${body.payload.error_message}`],
+					[document_id, `${stage}: ${error_message}`],
 				);
+				console.log(`Document marked failed: ${document_id}`);
 				continue;
 			}
 
@@ -88,11 +75,11 @@ export const handler = async (event: SQSEvent) => {
 			}
 
 			console.log(`Document finalized: ${document_id}`);
+		} catch (error) {
+			console.error('Error processing event:', error);
+			throw error;
+		} finally {
+			await client.end();
 		}
-	} catch (error) {
-		console.error('Error processing event:', error);
-		throw error;
-	} finally {
-		await client.end();
 	}
 };
