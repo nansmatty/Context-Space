@@ -2,6 +2,7 @@ import { SQSEvent, SQSRecord } from 'aws-lambda';
 import { generateEmbeddings } from '../services/bedrock.service';
 import { DbInsertionPayload, EmbeddingsQueueEnvelope } from '../utils/shared_types';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
+import { embeddingsQueueMessageSchema } from '../utils/validation';
 const sqs = new SQSClient({});
 
 const queueUrl = process.env.DATABASE_DATA_QUEUE_URL!;
@@ -17,13 +18,10 @@ if (!finalizerQueueUrl) {
 
 export const handler = async (event: SQSEvent) => {
 	for (const record of event.Records as SQSRecord[]) {
-		let message: EmbeddingsQueueEnvelope | null = null;
+		const rawBody = JSON.parse(record.body) as EmbeddingsQueueEnvelope;
+		let body = embeddingsQueueMessageSchema.parse(rawBody);
 
 		try {
-			const body = JSON.parse(record.body) as EmbeddingsQueueEnvelope;
-
-			message = body;
-
 			if (body.type !== 'EMBEDDINGS_REQUEST') {
 				console.warn(`Skipping message with unsupported type: ${body.type}`);
 				continue;
@@ -61,11 +59,11 @@ export const handler = async (event: SQSEvent) => {
 		} catch (error) {
 			console.error('Error processing SQS message:', error);
 
-			if (message?.type === 'EMBEDDINGS_REQUEST') {
+			if (body.type === 'EMBEDDINGS_REQUEST') {
 				await sendProcessingFailedMessage({
-					document_id: message.payload.document_id,
-					user_id: message.payload.user_id,
-					workspace_id: message.payload.workspace_id,
+					document_id: body.payload.document_id,
+					user_id: body.payload.user_id,
+					workspace_id: body.payload.workspace_id,
 					stage: 'embeddings',
 					error_message: error instanceof Error ? error.message : 'Embeddings generation failed',
 				});
