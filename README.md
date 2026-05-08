@@ -17,6 +17,12 @@ ContextSpace is a production-style learning project implementing a serverless RA
 
 This is a backend-focused learning project built to understand production AWS serverless architectures and RAG systems at scale.
 
+## ⚠️ Note
+
+This project is intentionally backend-focused.
+The current MVP prioritizes distributed document processing,
+retrieval quality, and AWS infrastructure design before frontend development.
+
 ---
 
 ## 🏗️ Architecture
