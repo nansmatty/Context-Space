@@ -2,25 +2,34 @@ import { SQSEvent, SQSRecord } from 'aws-lambda';
 import { generateEmbeddings } from '../services/bedrock.service';
 import { DbInsertionPayload, EmbeddingsQueueEnvelope } from '../utils/shared_types';
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
-
 const sqs = new SQSClient({});
 
 const queueUrl = process.env.DATABASE_DATA_QUEUE_URL!;
+const finalizerQueueUrl = process.env.FINALIZE_QUEUE_URL!;
+
 if (!queueUrl) {
 	throw new Error('DATABASE_DATA_QUEUE_URL is missing');
 }
 
+if (!finalizerQueueUrl) {
+	throw new Error('FINALIZE_QUEUE_URL is missing');
+}
+
 export const handler = async (event: SQSEvent) => {
 	for (const record of event.Records as SQSRecord[]) {
-		try {
-			const message = JSON.parse(record.body) as EmbeddingsQueueEnvelope;
+		let message: EmbeddingsQueueEnvelope | null = null;
 
-			if (message.type !== 'EMBEDDINGS_REQUEST') {
-				console.warn(`Skipping message with unsupported type: ${message.type}`);
+		try {
+			const body = JSON.parse(record.body) as EmbeddingsQueueEnvelope;
+
+			message = body;
+
+			if (body.type !== 'EMBEDDINGS_REQUEST') {
+				console.warn(`Skipping message with unsupported type: ${body.type}`);
 				continue;
 			}
 
-			const { chunk_index, content } = message.payload;
+			const { chunk_index, content } = body.payload;
 
 			if (!Number.isInteger(chunk_index)) {
 				throw new Error(`Invalid chunk_index: ${chunk_index}`);
@@ -33,7 +42,7 @@ export const handler = async (event: SQSEvent) => {
 			const embedding = await generateEmbeddings(content);
 
 			const dbPayload: DbInsertionPayload = {
-				payload: message.payload,
+				payload: body.payload,
 				embedding: embedding,
 			};
 
@@ -45,15 +54,44 @@ export const handler = async (event: SQSEvent) => {
 			await sqs.send(sendMessageCommand);
 
 			console.log('Embedding generated and forwarded to DB queue:', {
-				document_id: message.payload.document_id,
-				chunk_index: message.payload.chunk_index,
+				document_id: body.payload.document_id,
+				chunk_index: body.payload.chunk_index,
 				embedding_length: embedding.length,
 			});
 		} catch (error) {
 			console.error('Error processing SQS message:', error);
+
+			if (message?.type === 'EMBEDDINGS_REQUEST') {
+				await sendProcessingFailedMessage({
+					document_id: message.payload.document_id,
+					user_id: message.payload.user_id,
+					workspace_id: message.payload.workspace_id,
+					stage: 'embeddings',
+					error_message: error instanceof Error ? error.message : 'Embeddings generation failed',
+				});
+			}
+
 			throw error;
 		}
 	}
 
 	return { success: true };
 };
+
+async function sendProcessingFailedMessage(params: {
+	document_id: string;
+	user_id: string;
+	workspace_id: string;
+	stage: string;
+	error_message: string;
+}) {
+	await sqs.send(
+		new SendMessageCommand({
+			QueueUrl: finalizerQueueUrl,
+			MessageBody: JSON.stringify({
+				type: 'DOCUMENT_PROCESSING_FAILED',
+				payload: params,
+			}),
+		}),
+	);
+}
