@@ -2,7 +2,7 @@ import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { createDbClient } from '../db/db';
 import { parseSqsRecord, toPGVector } from '../utils/general-utils';
 import { DbInsertionPayload } from '../utils/shared_types';
-import type { SQSEvent, SQSRecord } from 'aws-lambda';
+import type { SQSEvent } from 'aws-lambda';
 
 const sqs = new SQSClient({});
 
