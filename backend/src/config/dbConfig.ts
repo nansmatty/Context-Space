@@ -3,11 +3,8 @@ import { logger } from '../utils/logger';
 
 const MONGO_OPTIONS = {
 	maxPoolSize: 10,
-	minPoolSize: 5,
 	serverSelectionTimeoutMS: 5000,
-	socketTimeoutMS: 45000,
 	connectTimeoutMS: 10000,
-	family: 4,
 	retryWrites: true,
 	retryReads: true,
 	autoIndex: process.env.NODE_ENV !== 'production',
