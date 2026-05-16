@@ -18,18 +18,6 @@ const startServer = async () => {
 	try {
 		await connectDB();
 
-		app.get('/health', (req, res) => {
-			const { checkDBHealth } = require('./config/dbConfig');
-			const dbHealth = checkDBHealth();
-
-			res.status(dbHealth ? 200 : 503).json({
-				status: dbHealth ? 'healthy' : 'unhealthy',
-				timestamp: new Date().toISOString(),
-				uptime: uptime(),
-				database: dbHealth ? 'connected' : 'disconnected',
-			});
-		});
-
 		server = app.listen(PORT, () => {
 			logger.info(`Server running on port ${PORT}`);
 			logger.info(`Environment: ${env.NODE_ENV}`);

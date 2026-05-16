@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { errorHandler } from './middlewares/error-middleware';
 import documentRoutes from './modules/document/document.routes';
 import { notFoundHandler } from './middlewares/not-found-middleware';
+import { checkDBHealth } from './config/dbConfig';
 
 const app = express();
 
@@ -33,6 +34,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(mongoSanitize());
 app.use(hpp());
+
+app.get('/health', async (_req, res) => {
+	const dbHealth = await checkDBHealth();
+
+	res.status(dbHealth ? 200 : 503).json({
+		status: dbHealth ? 'healthy' : 'unhealthy',
+		timestamp: new Date().toISOString(),
+		uptime: process.uptime(),
+		database: dbHealth ? 'connected' : 'disconnected',
+	});
+});
 
 app.use('/api/documents', documentRoutes);
 
