@@ -3,6 +3,7 @@ import cors from 'cors';
 import { connectDB } from './config/dbConfig';
 import { errorHandler } from './middlewares/error-middleware';
 import documentRoutes from './modules/document/document.routes';
+import { notFoundHandler } from './middlewares/not-found-middleware';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use('/api/documents', documentRoutes);
 
+app.use(notFoundHandler);
 app.use(errorHandler);
 
 export default app;
