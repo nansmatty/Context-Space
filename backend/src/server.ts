@@ -6,7 +6,7 @@ import { uptime } from 'node:process';
 
 const PORT = process.env.PORT || 5601;
 
-const requiredEnvVars = ['MONGO_URI', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'S3_BUCKET_NAME', 'ASK_API_GATEWAY_URL'];
+const requiredEnvVars = ['MONGO_URI', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'];
 const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
