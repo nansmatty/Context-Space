@@ -50,7 +50,7 @@ export const connectDB = async () => {
 
 export const checkDBHealth = async (): Promise<boolean> => {
 	try {
-		await mongoose.connection.db.admin().ping();
+		await mongoose.connection.db?.admin().ping();
 		return true;
 	} catch (error) {
 		logger.error('Database health check failed:', error);
