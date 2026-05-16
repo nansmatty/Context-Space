@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/global-error-handler';
 import multer from 'multer';
+import { env } from '../config/env';
 
 declare global {
 	namespace Express {
@@ -71,12 +72,12 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
 	};
 
 	// Only send stack trace in development
-	if (process.env.NODE_ENV === 'development') {
+	if (env.NODE_ENV === 'development') {
 		response.stack = err.stack;
 	}
 
 	// For non-operational errors in production, send generic message
-	if (process.env.NODE_ENV === 'production' && !error.isOperational) {
+	if (env.NODE_ENV === 'production' && !error.isOperational) {
 		response.error = 'Something went wrong';
 	}
 

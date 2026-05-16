@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
+import { env } from './env';
 
 const MONGO_OPTIONS = {
 	maxPoolSize: 10,
@@ -7,15 +8,15 @@ const MONGO_OPTIONS = {
 	connectTimeoutMS: 10000,
 	retryWrites: true,
 	retryReads: true,
-	autoIndex: process.env.NODE_ENV !== 'production',
+	autoIndex: env.NODE_ENV !== 'production',
 };
 
 export const connectDB = async () => {
 	try {
-		if (!process.env.MONGO_URI) {
+		if (!env.MONGO_URI) {
 			throw new Error('MONGO_URI is not defined in environment variables');
 		}
-		const conn = await mongoose.connect(process.env.MONGO_URI!, MONGO_OPTIONS);
+		const conn = await mongoose.connect(env.MONGO_URI!, MONGO_OPTIONS);
 		logger.info(`MongoDB Connected: ${conn.connection.host}`);
 		logger.info(`Database: ${conn.connection.name}`);
 

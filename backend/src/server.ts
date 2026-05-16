@@ -3,16 +3,9 @@ import app from './app';
 import { logger } from './utils/logger';
 import { connectDB } from './config/dbConfig';
 import { uptime } from 'node:process';
+import { env } from './config/env';
 
-const PORT = process.env.PORT || 5601;
-
-const requiredEnvVars = ['MONGO_URI', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'];
-const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
-
-if (missingEnvVars.length > 0) {
-	logger.error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-	process.exit(1);
-}
+const PORT = env.PORT || 5601;
 
 process.on('uncaughtException', (error: Error) => {
 	logger.error('Uncaught Exception:', { message: error.message, stack: error.stack });
@@ -39,7 +32,7 @@ const startServer = async () => {
 
 		server = app.listen(PORT, () => {
 			logger.info(`Server running on port ${PORT}`);
-			logger.info(`Environment: ${process.env.NODE_ENV}`);
+			logger.info(`Environment: ${env.NODE_ENV}`);
 		});
 
 		// Handle unhandled promise rejections

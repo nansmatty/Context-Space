@@ -2,8 +2,9 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/global-error-handler';
 import path from 'path';
+import { env } from '../config/env';
 
-const s3 = new S3Client({ region: process.env.AWS_REGION });
+const s3 = new S3Client({ region: env.AWS_REGION });
 
 export const uploadToS3 = async (file: Buffer, originalName: string, contentType: string, documentId: string) => {
 	try {
@@ -17,7 +18,7 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 		const uniqueKey = `upload/${documentId}/${baseName}${ext}`;
 
 		const params = new PutObjectCommand({
-			Bucket: process.env.S3_BUCKET_NAME!,
+			Bucket: env.S3_BUCKET_NAME!,
 			Key: uniqueKey,
 			Body: file,
 			ContentType: contentType,
@@ -31,7 +32,7 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 
 		logger.info(`File uploaded successfully to S3 with key: ${uniqueKey}`);
 
-		return { key: uniqueKey, url: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uniqueKey}`, documentId };
+		return { key: uniqueKey, url: `https://${env.S3_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${uniqueKey}`, documentId };
 	} catch (error: any) {
 		logger.error(`Error uploading file to S3`, {
 			error: error.message,

@@ -3,6 +3,7 @@ import { AppError, asyncHandler } from '../../utils/global-error-handler';
 import { uploadToS3 } from '../../services/s3.services';
 import { randomUUID } from 'crypto';
 import { logger } from '../../utils/logger';
+import { env } from '../../config/env';
 
 export const uploadDocument = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
 	if (!req.file) {
@@ -33,11 +34,11 @@ export const askQuestion = asyncHandler(async (req: Request, res: Response, _nex
 		throw new AppError('Missing required fields', 400);
 	}
 
-	if (!process.env.ASK_API_GATEWAY_URL) {
+	if (!env.ASK_API_GATEWAY_URL) {
 		throw new AppError('ASK_API_GATEWAY_URL not configured', 500);
 	}
 
-	const response = await fetch(process.env.ASK_API_GATEWAY_URL!, {
+	const response = await fetch(env.ASK_API_GATEWAY_URL!, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
