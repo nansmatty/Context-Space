@@ -1,52 +1,73 @@
 import { NextFunction, Request, Response } from 'express';
-import { AppError } from '../../utils/global-error-handler';
+import { AppError, asyncHandler } from '../../utils/global-error-handler';
 import { uploadToS3 } from '../../services/s3.services';
 import { randomUUID } from 'crypto';
+import { logger } from '../../utils/logger';
 
-export const uploadDocument = async (req: Request, res: Response, next: NextFunction) => {
-	try {
-		if (!req.file) {
-			throw new AppError('No file uploaded', 400);
-		}
-		const file = req.file;
-
-		const documentId = randomUUID();
-		const uploadData = await uploadToS3(file.buffer, file.originalname, file.mimetype, documentId);
-
-		res.status(200).json({
-			success: true,
-			uploadData: uploadData.url,
-			key: uploadData.key,
-		});
-	} catch (error) {
-		next(error);
+export const uploadDocument = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+	if (!req.file) {
+		throw new AppError('No file uploaded', 400);
 	}
-};
+	const file = req.file;
 
-export const askQuestion = async (req: Request, res: Response, next: NextFunction) => {
-	try {
-		const { question, user_id, workspace_id } = req.body;
+	const documentId = randomUUID();
+	const uploadData = await uploadToS3(file.buffer, file.originalname, file.mimetype, documentId);
 
-		if (!question || !user_id || !workspace_id) {
-			throw new AppError('Missing required fields', 400);
-		}
+	logger.info('Document uploaded successfully', {
+		documentId,
+		fileName: file.originalname,
+		requestId: req.requestId,
+	});
 
-		const response = await fetch(process.env.ASK_API_GATEWAY_URL!, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				question,
-				user_id,
-				workspace_id,
-			}),
-		});
+	res.status(200).json({
+		success: true,
+		uploadData: uploadData.url,
+		key: uploadData.key,
+	});
+});
 
-		const data = await response.json();
+export const askQuestion = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+	const { question, user_id, workspace_id } = req.body;
 
-		return res.status(response.status).json(data);
-	} catch (error) {
-		next(error);
+	if (!question || !user_id || !workspace_id) {
+		throw new AppError('Missing required fields', 400);
 	}
-};
+
+	if (!process.env.ASK_API_GATEWAY_URL) {
+		throw new AppError('ASK_API_GATEWAY_URL not configured', 500);
+	}
+
+	const response = await fetch(process.env.ASK_API_GATEWAY_URL!, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			question,
+			user_id,
+			workspace_id,
+		}),
+	});
+
+	// Check if response is ok
+	if (!response.ok) {
+		const errorText = await response.text();
+		logger.error('External API error', {
+			status: response.status,
+			statusText: response.statusText,
+			error: errorText,
+			requestId: req.requestId,
+		});
+		throw new AppError(`External API returned error: ${response.statusText}`, response.status);
+	}
+
+	const data = await response.json();
+
+	logger.info('Question answered successfully', {
+		user_id,
+		workspace_id,
+		requestId: req.requestId,
+	});
+
+	res.status(200).json(data);
+});
