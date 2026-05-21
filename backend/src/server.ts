@@ -2,7 +2,6 @@ import 'dotenv/config';
 import app from './app';
 import { logger } from './utils/logger';
 import { connectDB } from './config/dbConfig';
-import { uptime } from 'node:process';
 import { env } from './config/env';
 
 const PORT = env.PORT || 5601;
