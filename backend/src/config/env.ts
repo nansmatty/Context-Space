@@ -13,7 +13,8 @@ const envSchema = z.object({
 	AWS_SECRET_ACCESS_KEY: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
 	S3_BUCKET_NAME: z.string().min(1, 'S3_BUCKET_NAME is required'),
 
-	ASK_API_GATEWAY_URL: z.string().url('ASK_API_GATEWAY_URL must be a valid URL'),
+	ASK_API_GATEWAY_URL: z.url('ASK_API_GATEWAY_URL must be a valid URL'),
+	CLIENT_URL: z.url('CLIENT_URL must be a valid URL'),
 
 	JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
 	JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN is required'),

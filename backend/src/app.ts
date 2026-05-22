@@ -11,6 +11,7 @@ import { errorHandler } from './middlewares/error-middleware';
 import documentRoutes from './modules/document/document.routes';
 import { notFoundHandler } from './middlewares/not-found-middleware';
 import { checkDBHealth } from './config/dbConfig';
+import { env } from 'process';
 
 const app = express();
 
@@ -19,7 +20,12 @@ app.use((req, res, next) => {
 	next();
 });
 
-app.use(cors());
+app.use(
+	cors({
+		origin: env.NODE_ENV === 'production' ? env.CLIENT_URL : '*',
+		credentials: true,
+	}),
+);
 app.use(helmet());
 app.use(cookieParser());
 
