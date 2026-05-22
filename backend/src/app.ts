@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import crypto from 'crypto';
+import cookieParser from 'cookie-parser';
 
 import { errorHandler } from './middlewares/error-middleware';
 import documentRoutes from './modules/document/document.routes';
@@ -20,6 +21,7 @@ app.use((req, res, next) => {
 
 app.use(cors());
 app.use(helmet());
+app.use(cookieParser());
 
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000,
