@@ -4,7 +4,7 @@ import { logger } from './utils/logger';
 import { connectDB } from './config/dbConfig';
 import { env } from './config/env';
 
-const PORT = env.PORT || 5601;
+const PORT = env.PORT || 5241;
 
 process.on('uncaughtException', (error: Error) => {
 	logger.error('Uncaught Exception:', { message: error.message, stack: error.stack });
