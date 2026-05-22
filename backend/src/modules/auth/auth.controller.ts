@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { asyncHandler, AppError } from '../../utils/global-error-handler';
 import { logger } from '../../utils/logger';
-import { registerSchema, verifyOtpSchema } from '../../validations/auth.validation';
+import { loginSchema, registerSchema, resendOtpSchema, verifyOtpSchema } from '../../validations/auth.validation';
 import { UserModel } from '../../models/user.model';
 import { compareData, hashData } from '../../services/auth.services';
-import { otpGeneration } from '../../utils/auth.utils';
+import { generateAccessToken, otpGeneration, setAuthCookie } from '../../utils/auth.utils';
 import { env } from '../../config/env';
 
 export const registerController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
@@ -45,7 +45,7 @@ export const verifyOTPController = asyncHandler(async (req: Request, res: Respon
 
 	const user = await UserModel.findOne({
 		email,
-	}).select('+emailVerificationOtpHash +emailVerificationOtpExpiresAt');
+	}).select('+emailVerificationOtpHash');
 
 	if (!user) {
 		logger.warn('OTP verification attempt for non-existent email', { email, requestId: req.requestId });
@@ -83,15 +83,81 @@ export const verifyOTPController = asyncHandler(async (req: Request, res: Respon
 	res.status(200).json({ success: true, email, message: 'Email verified successfully. Please login to continue.' });
 });
 
-export const resendOTPController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {});
+export const resendOTPController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+	const validatedData = resendOtpSchema.parse({ email: req.body.email });
+	const { email } = validatedData;
+	logger.info('Resend OTP request received', { email, requestId: req.requestId });
 
-export const loginController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {});
+	const user = await UserModel.findOne({ email });
+
+	if (!user) {
+		logger.warn('Resend OTP attempt for non-existent email', { email, requestId: req.requestId });
+		throw new AppError('Email not found', 404);
+	}
+
+	if (user.isEmailVerified) {
+		logger.warn('Resend OTP attempt for already verified email', { email, requestId: req.requestId });
+		throw new AppError('Email is already verified', 400);
+	}
+
+	const otp = otpGeneration();
+	const otpHash = await hashData(otp);
+
+	user.emailVerificationOtpHash = otpHash;
+	user.emailVerificationOtpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+	await user.save();
+	logger.info('New OTP generated and saved successfully', { email, requestId: req.requestId });
+
+	res.status(200).json({ success: true, email, message: 'A new OTP has been sent to your email address' });
+});
+
+export const loginController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+	const validatedData = loginSchema.parse(req.body);
+	const { email, password } = validatedData;
+	logger.info('Login attempt received', { email, requestId: req.requestId });
+
+	const user = await UserModel.findOne({ email }).select('+passwordHash');
+
+	if (!user) {
+		logger.warn('Login attempt with non-existent email', { email, requestId: req.requestId });
+		throw new AppError('Invalid email or password', 401);
+	}
+
+	if (!user.isEmailVerified) {
+		logger.warn('Login attempt with unverified email', { email, requestId: req.requestId });
+		throw new AppError('Email is not verified. Please verify your email before logging in.', 403);
+	}
+
+	const isPasswordValid = await compareData(password, user.passwordHash);
+
+	if (!isPasswordValid) {
+		logger.warn('Login attempt with invalid password', { email, requestId: req.requestId });
+		throw new AppError('Invalid email or password', 401);
+	}
+
+	const tokenPayload = { userId: user._id.toString(), email: user.email };
+	const accessToken = generateAccessToken(tokenPayload);
+	setAuthCookie(res, accessToken);
+	logger.info('User logged in successfully', { email, requestId: req.requestId });
+
+	res.status(200).json({
+		success: true,
+		message: 'Logged in successfully',
+		user: {
+			id: user._id,
+			name: user.name,
+			email: user.email,
+			isEmailVerified: user.isEmailVerified,
+		},
+	});
+});
 
 export const logoutController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
 	res.clearCookie('accessToken', {
 		httpOnly: true,
 		secure: env.NODE_ENV === 'production',
 		sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+		path: '/',
 	});
 
 	res.status(200).json({ success: true, message: 'Logged out successfully' });
