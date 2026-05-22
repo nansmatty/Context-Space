@@ -14,6 +14,9 @@ const envSchema = z.object({
 	S3_BUCKET_NAME: z.string().min(1, 'S3_BUCKET_NAME is required'),
 
 	ASK_API_GATEWAY_URL: z.string().url('ASK_API_GATEWAY_URL must be a valid URL'),
+
+	JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+	JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN is required'),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
