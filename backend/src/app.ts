@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 
 import { errorHandler } from './middlewares/error-middleware';
+import authRoutes from './modules/auth/auth.routes';
 import documentRoutes from './modules/document/document.routes';
 import { notFoundHandler } from './middlewares/not-found-middleware';
 import { checkDBHealth } from './config/dbConfig';
@@ -55,6 +56,7 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use('/api/documents', documentRoutes);
+app.use('/api/auth', authRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
