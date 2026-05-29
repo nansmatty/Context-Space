@@ -18,6 +18,8 @@ const envSchema = z.object({
 
 	JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
 	JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN is required'),
+
+	RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY is required'),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
