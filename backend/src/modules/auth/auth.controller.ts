@@ -6,6 +6,7 @@ import { UserModel } from '../../models/user.model';
 import { compareData, hashData } from '../../services/auth.services';
 import { generateAccessToken, otpGeneration, setAuthCookie } from '../../utils/auth.utils';
 import { env } from '../../config/env';
+import { sendOtpEmail } from '../../services/email.services';
 
 export const registerController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
 	const validatedData = registerSchema.parse(req.body);
@@ -32,6 +33,8 @@ export const registerController = asyncHandler(async (req: Request, res: Respons
 	});
 	await newUser.save();
 	logger.info('New user registered successfully', { email, requestId: req.requestId });
+
+	await sendOtpEmail(email, otp);
 
 	res.status(201).json({ success: true, email, message: 'User registered successfully. OTP has been sent to your email.' });
 });
@@ -107,6 +110,8 @@ export const resendOTPController = asyncHandler(async (req: Request, res: Respon
 	user.emailVerificationOtpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 	await user.save();
 	logger.info('New OTP generated and saved successfully', { email, requestId: req.requestId });
+
+	await sendOtpEmail(email, otp);
 
 	res.status(200).json({ success: true, email, message: 'A new OTP has been sent to your email address' });
 });
