@@ -33,7 +33,7 @@ export const registerController = asyncHandler(async (req: Request, res: Respons
 	await newUser.save();
 	logger.info('New user registered successfully', { email, requestId: req.requestId });
 
-	res.status(201).json({ success: true, email, message: 'User registered successfully' });
+	res.status(201).json({ success: true, email, message: 'User registered successfully. OTP has been sent to your email.' });
 });
 
 export const verifyOTPController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
