@@ -167,3 +167,8 @@ export const logoutController = asyncHandler(async (req: Request, res: Response,
 
 	res.status(200).json({ success: true, message: 'Logged out successfully' });
 });
+
+// Temporary endpoint for testing protected routes
+export const protectedTestController = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+	res.status(200).json({ success: true, message: 'You have accessed a protected route', user: req.user });
+});
