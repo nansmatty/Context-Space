@@ -36,9 +36,18 @@ export const uploadDocument = asyncHandler(async (req: Request, res: Response, _
 });
 
 export const askQuestion = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
-	const { question, user_id, workspace_id } = req.body;
+	const { question } = req.body;
 
-	if (!question || !user_id || !workspace_id) {
+	const user_id = req.user?.id;
+
+	if (!user_id) {
+		throw new AppError('User not authenticated', 401);
+	}
+
+	const workspace = await getDefaultWorkspaceForUser(user_id);
+	const workspace_id = workspace._id.toString();
+
+	if (!question || !workspace_id) {
 		throw new AppError('Missing required fields', 400);
 	}
 
