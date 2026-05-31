@@ -35,12 +35,22 @@ export const handler = async (event: any) => {
 		const response = await s3Client.send(getCommand);
 
 		const metadataDocumentId = headResponse.Metadata?.documentid;
+		const metadataWorkspaceId = headResponse.Metadata?.workspaceid;
+		const metadataUserId = headResponse.Metadata?.userid;
 		const keyDocumentId = extractDocumentIdFromKey(key);
 
 		const documentId = metadataDocumentId ?? keyDocumentId;
 
 		if (!documentId) {
 			throw new Error(`Missing documentId from both metadata and S3 key: ${key}`);
+		}
+
+		if (!metadataWorkspaceId) {
+			throw new Error(`Missing workspaceId in S3 metadata for key: ${key}`);
+		}
+
+		if (!metadataUserId) {
+			throw new Error(`Missing userId in S3 metadata for key: ${key}`);
 		}
 
 		const streamedText = await streamToBuffer(response.Body as NodeJS.ReadableStream);
@@ -65,8 +75,8 @@ export const handler = async (event: any) => {
 		for (let i = 0; i < chunks.length; i++) {
 			const message: EmbeddingsQueueMessage = {
 				document_id: documentId,
-				user_id: 'unknown', // Placeholder, replace with actual user ID if available
-				workspace_id: 'unknown', // Placeholder, replace with actual workspace ID if available
+				user_id: metadataUserId, // Placeholder, replace with actual user ID if available
+				workspace_id: metadataWorkspaceId, // Placeholder, replace with actual workspace ID if available
 				chunk_index: i,
 				chunk_count: chunks.length,
 				content: chunks[i],
