@@ -1,102 +1,528 @@
 # ContextSpace
 
-> A backend-focused AI/RAG system for intelligent document querying (MVP)
+**Multi-Tenant Serverless RAG Platform with End-to-End Ownership Isolation**
 
-[![AWS](https://img.shields.io/badge/AWS-Serverless-orange)](https://aws.amazon.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-blue)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-22.x-green)](https://nodejs.org/)
+[![AWS](https://img.shields.io/badge/AWS-Serverless-FF9900?logo=amazon-aws)](https://aws.amazon.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22.x-339933?logo=node.js)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?logo=mongodb)](https://www.mongodb.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/license-ISC-blue.svg)](LICENSE)
+
+---
 
 ## 📋 Overview
 
-ContextSpace is a production-style learning project implementing a serverless RAG (Retrieval-Augmented Generation) system. Users can upload documents (PDF/TXT), which are automatically processed into semantic embeddings and stored for intelligent querying using natural language.
+**ContextSpace** is a production-grade, multi-tenant serverless **Retrieval-Augmented Generation (RAG)** platform designed for secure document processing, embedding generation, and AI-powered question answering. Built on AWS serverless infrastructure, it demonstrates enterprise patterns for:
 
-**Current Status:** MVP Complete (Backend + Infrastructure Only)  
-**Stage:** Backend RAG pipeline stabilized and operational  
-**Not Yet Implemented:** Frontend UI, authentication system, team workspaces, permission management
+- **Custom JWT Authentication** with OTP-based email verification
+- **Multi-tenant Architecture** with user/workspace/membership isolation
+- **Event-driven Serverless Pipeline** for document ingestion and embedding
+- **Metadata-filtered Vector Retrieval** ensuring cross-user data isolation
+- **Transactional Consistency** using MongoDB transactions for workspace creation
+- **Infrastructure as Code** using AWS CDK
 
-This is a backend-focused learning project built to understand production AWS serverless architectures and RAG systems at scale.
-
-## ⚠️ Note
-
-This project is intentionally backend-focused.
-The current MVP prioritizes distributed document processing,
-retrieval quality, and AWS infrastructure design before frontend development.
+This project showcases real-world backend engineering practices, including distributed data propagation, ownership-based access control, and production-ready error handling.
 
 ---
 
 ## 🏗️ Architecture
 
-### Upload Flow
+![Architecture Diagram](docs/architecture.png)
+
+### System Flow
+
+#### **Upload Flow**
 
 ```
-Frontend/API Client
-    │
-    ▼
-Backend Upload API (Express)
-    │
-    ▼
-S3 Bucket (upload/{documentId}/)
-    │ S3 Event Trigger
-    ▼
-Ingestion Lambda
-    │ • Extract text from PDF/TXT
-    │ • Chunk into ~500 word segments
-    │ • Generate chunk messages
-    ▼
-SQS Queue (Embeddings)
-    │
-    ▼
-Embeddings Lambda
-    │ • Generate 1024-dim vectors
-    │ • Amazon Bedrock Titan Embeddings
-    ▼
-SQS Queue (DB Insertion)
-    │
-    ▼
-DB Insertion Lambda
-    │ • Store chunks + embeddings
-    │ • Insert into Aurora PostgreSQL
-    │ • Send finalizer message
-    ▼
-SQS Queue (Finalizer)
-    │
-    ▼
-Finalizer Lambda
-    │ • Verify all chunks inserted
-    │ • Update document status
-    └─▶ Aurora PostgreSQL (pgvector)
+User → Backend API (JWT Protected)
+  │
+  ├─ Authenticate & Extract user_id
+  ├─ Fetch workspace_id from MongoDB
+  ├─ Generate document_id (UUID)
+  │
+  └─▶ S3 Upload (with metadata: user_id, workspace_id, document_id)
+       │
+       └─▶ S3 Event → Ingestion Lambda
+            │
+            ├─ Extract text (PDF/TXT)
+            ├─ Chunk into ~500 word segments
+            └─▶ SQS (Embeddings Queue)
+                 │
+                 └─▶ Embeddings Lambda
+                      │
+                      ├─ Generate 1024-dim vectors (Amazon Bedrock Titan)
+                      └─▶ SQS (DB Insertion Queue)
+                           │
+                           └─▶ DB Insertion Lambda
+                                │
+                                ├─ Insert documents + chunks into Aurora PostgreSQL
+                                ├─ Store user_id, workspace_id, document_id
+                                └─▶ SQS (Finalizer Queue)
+                                     │
+                                     └─▶ Finalizer Lambda
+                                          │
+                                          ├─ Verify all chunks inserted
+                                          └─ Update document status to 'completed'
 ```
 
-### Ask Flow
+#### **Ask Flow**
 
 ```
-Frontend/API Client
-    │
-    ▼
-Backend Ask Proxy API (Express)
-    │
-    ▼
-API Gateway → Retrieval Lambda
-    │ • Generate question embedding (Titan)
-    │ • pgvector similarity search (top_k=3, threshold≥0.25)
-    │ • Retrieve relevant chunks
-    │ • Build context from matches
-    ▼
-Amazon Bedrock (GPT-OSS-20B)
-    │ • Generate answer from context
-    │ • Or return "no relevant context" fallback
-    ▼
-Response: Answer + Sources
+User → Backend API (JWT Protected)
+  │
+  ├─ Authenticate & Extract user_id
+  ├─ Fetch workspace_id from MongoDB
+  │
+  └─▶ API Gateway → Retrieval Lambda
+       │
+       ├─ Generate question embedding (Titan)
+       ├─ Perform pgvector similarity search
+       │   ├─ Filter: workspace_id = user's workspace
+       │   ├─ Filter: user_id = authenticated user
+       │   ├─ Filter: status = 'completed'
+       │   ├─ Top K = 3
+       │   └─ Similarity threshold ≥ 0.25
+       │
+       ├─ Build context from matching chunks
+       └─▶ Amazon Bedrock (GPT-OSS-20B)
+            │
+            └─ Generate answer from context
 ```
 
 ---
 
-## 🎯 Design Decisions
+## 🚀 Features
 
-### Document Identity Propagation
+### ✅ **Completed Features**
 
-Each document is assigned a unique `document_id` (UUID) at upload time in the backend. This ID flows through the entire pipeline:
+#### **Authentication & Authorization**
+
+- ✅ **Custom JWT Authentication** (access tokens only, no refresh tokens)
+- ✅ **User Registration** with email/password
+- ✅ **OTP-based Email Verification** via Resend integration
+- ✅ **Resend OTP** functionality
+- ✅ **Login/Logout** with HTTP-only cookie management
+- ✅ **Protected Routes** with JWT middleware
+
+#### **Multi-Tenant Workspace System**
+
+- ✅ **User Model** with email verification state
+- ✅ **Workspace Model** (personal/team types)
+- ✅ **Membership Model** with role-based access (owner/admin/member)
+- ✅ **Automatic Personal Workspace Creation** during email verification
+- ✅ **MongoDB Transactions** for atomic workspace setup
+- ✅ **Default Workspace Resolution** for authenticated users
+
+#### **Document Processing Pipeline**
+
+- ✅ **Protected Upload API** (JWT-authenticated)
+- ✅ **S3 Metadata Propagation** (user_id, workspace_id, document_id)
+- ✅ **PDF/TXT Text Extraction** in Ingestion Lambda
+- ✅ **Text Chunking** (~500 words per chunk)
+- ✅ **SQS-based Event Propagation** (3 queues: embeddings, DB insertion, finalizer)
+- ✅ **1024-dimensional Vector Embeddings** (Amazon Bedrock Titan)
+- ✅ **Aurora PostgreSQL Storage** with pgvector extension
+- ✅ **Document Status Tracking** (processing → completed/failed)
+- ✅ **Chunk-level Metadata Persistence** (user_id, workspace_id, document_id)
+- ✅ **Finalizer Lambda** for completion verification
+
+#### **AI-Powered Question Answering**
+
+- ✅ **Protected Ask API** (JWT-authenticated)
+- ✅ **Metadata-filtered Vector Retrieval**
+  - Filters by workspace_id (workspace isolation)
+  - Filters by user_id (user-level isolation)
+  - Only queries completed documents
+- ✅ **Cosine Similarity Search** via pgvector
+- ✅ **Context-aware Answer Generation** (Amazon Bedrock GPT-OSS-20B)
+- ✅ **Source Citation** (document_id, chunk_index, similarity scores)
+- ✅ **Cross-user Data Isolation Verified**
+
+#### **Infrastructure & Operations**
+
+- ✅ **AWS CDK Infrastructure** (IaC)
+- ✅ **VPC with Public/Private Subnets**
+- ✅ **VPC Endpoints** (Secrets Manager, Bedrock Runtime, SQS)
+- ✅ **Aurora PostgreSQL Serverless** with pgvector
+- ✅ **4 Lambda Functions** (Ingestion, Embeddings, DB Insertion, Retrieval)
+- ✅ **S3 Event Notifications**
+- ✅ **API Gateway Integration**
+- ✅ **Database Migrations** using raw SQL
+- ✅ **Security Groups & IAM Roles**
+- ✅ **Winston Logging** with request IDs
+- ✅ **Zod Validation** on all API inputs
+- ✅ **Error Handling Middleware**
+- ✅ **Rate Limiting** (100 requests/15 min per IP)
+- ✅ **Security Headers** (Helmet, CORS, HPP, Mongo Sanitize)
+
+---
+
+### 🔮 **Planned Features (Not Yet Implemented)**
+
+- ❌ Document Status Polling API
+- ❌ Document Deletion Flow
+- ❌ Retry Failed Document Processing
+- ❌ Team Workspace Creation
+- ❌ Workspace Invitation System
+- ❌ Admin/Member Role Management
+- ❌ Frontend UI
+
+---
+
+## 🛠️ Technology Stack
+
+### **Backend (Node.js + Express)**
+
+- **Runtime:** Node.js 22.x
+- **Framework:** Express.js 4.x
+- **Language:** TypeScript 6.0
+- **Authentication:** jsonwebtoken, bcryptjs
+- **Validation:** Zod 4.x
+- **Database:** Mongoose 9.x (MongoDB)
+- **Email:** Resend API
+- **Storage:** AWS SDK S3 Client v3
+- **Logging:** Winston
+- **Security:** Helmet, CORS, express-rate-limit, express-mongo-sanitize, HPP
+
+### **Lambda Functions**
+
+- **Runtime:** Node.js (esbuild bundled)
+- **Language:** TypeScript 6.0
+- **AWS Services:** S3, SQS, Secrets Manager, Bedrock Runtime
+- **Database:** node-postgres (pg) with pgvector
+- **Text Parsing:** pdf-parse, unpdf
+- **Validation:** Zod 4.x
+
+### **Infrastructure (AWS CDK)**
+
+- **IaC Tool:** AWS CDK 2.232+
+- **Language:** TypeScript 5.9
+- **Bundler:** esbuild
+
+### **Databases**
+
+- **MongoDB Atlas:** User/Workspace/Membership management
+- **Aurora PostgreSQL 16 Serverless:** Document chunks + pgvector embeddings
+
+### **AWS Services**
+
+- **Compute:** AWS Lambda
+- **Storage:** Amazon S3
+- **Database:** Aurora PostgreSQL Serverless v2
+- **Queues:** Amazon SQS
+- **AI/ML:** Amazon Bedrock (Titan Embeddings, GPT-OSS-20B)
+- **Networking:** VPC, VPC Endpoints
+- **Security:** Secrets Manager, IAM Roles
+- **API:** API Gateway (REST)
+
+---
+
+## 🔐 Security & Ownership Model
+
+### **Multi-Tenant Isolation**
+
+ContextSpace enforces strict **user-level** and **workspace-level** isolation throughout the entire pipeline:
+
+```
+User
+ │
+ └─▶ Membership (role: owner/admin/member)
+      │
+      └─▶ Workspace
+           │
+           └─▶ Document (in Aurora PostgreSQL)
+                │
+                └─▶ Chunks (with user_id, workspace_id, document_id)
+```
+
+### **Metadata Propagation**
+
+Every stage of the pipeline carries ownership metadata:
+
+| Stage               | Propagation Method                          |
+| ------------------- | ------------------------------------------- |
+| Upload API          | Extracted from JWT + MongoDB lookup         |
+| S3 Storage          | Stored in S3 object metadata                |
+| Ingestion Lambda    | Read from S3 metadata                       |
+| SQS Messages        | Included in message body                    |
+| Embeddings Lambda   | Forwarded in SQS payload                    |
+| DB Insertion Lambda | Inserted into PostgreSQL documents + chunks |
+| Retrieval Lambda    | Used in WHERE clause for vector search      |
+
+### **Authentication Flow**
+
+1. **Register** → User created with `isEmailVerified: false`
+2. **Verify OTP** → MongoDB transaction creates User + Workspace + Membership
+3. **Login** → JWT signed with `userId`, stored in HTTP-only cookie
+4. **Protected Routes** → Middleware validates JWT, attaches `req.user`
+
+### **Authorization Flow**
+
+1. Extract `user_id` from JWT
+2. Fetch active membership → `workspace_id`
+3. Propagate both IDs through S3 metadata
+4. Retrieval queries filter by both `user_id` AND `workspace_id`
+
+**Result:** Users can only access their own documents, even within shared workspaces (current implementation).
+
+---
+
+## 📡 API Endpoints
+
+### **Authentication** (`/api/auth`)
+
+| Method | Endpoint          | Description             | Auth Required |
+| ------ | ----------------- | ----------------------- | ------------- |
+| POST   | `/register`       | Create new user         | ❌            |
+| POST   | `/verify-otp`     | Verify email with OTP   | ❌            |
+| POST   | `/resend-otp`     | Resend verification OTP | ❌            |
+| POST   | `/login`          | Authenticate user       | ❌            |
+| POST   | `/logout`         | Clear auth cookie       | ❌            |
+| GET    | `/protected-test` | Test JWT middleware     | ✅            |
+
+### **Documents** (`/api/documents`)
+
+| Method | Endpoint  | Description                           | Auth Required |
+| ------ | --------- | ------------------------------------- | ------------- |
+| POST   | `/upload` | Upload PDF/TXT (max 10MB)             | ✅            |
+| POST   | `/ask`    | Ask question about uploaded documents | ✅            |
+
+---
+
+## 🗄️ Database Schema
+
+### **MongoDB Collections**
+
+#### **users**
+
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  email: String (unique, indexed),
+  passwordHash: String (select: false),
+  isEmailVerified: Boolean,
+  emailVerificationOtpHash: String (select: false),
+  emailVerificationOtpExpiresAt: Date,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### **workspaces**
+
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  ownerId: ObjectId (ref: User),
+  workspaceType: Enum['personal', 'team'],
+  createdAt: Date,
+  updatedAt: Date
+}
+// Unique index: (ownerId, workspaceType) where workspaceType = 'personal'
+```
+
+#### **memberships**
+
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId (ref: User),
+  workspaceId: ObjectId (ref: Workspace),
+  role: Enum['owner', 'admin', 'member'],
+  status: Enum['active', 'suspended', 'invited'],
+  createdAt: Date,
+  updatedAt: Date
+}
+// Unique index: (userId, workspaceId)
+```
+
+### **PostgreSQL Tables (Aurora)**
+
+#### **documents**
+
+```sql
+CREATE TABLE documents (
+  id UUID PRIMARY KEY,
+  user_id VARCHAR(64) NOT NULL,
+  workspace_id VARCHAR(64) NOT NULL,
+  s3_key TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  mime_type TEXT,
+  file_size BIGINT,
+  status VARCHAR(30) DEFAULT 'uploaded',
+  chunk_count INTEGER DEFAULT 0,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Indexes: workspace_id, user_id, status
+```
+
+#### **chunks**
+
+```sql
+CREATE TABLE chunks (
+  id UUID PRIMARY KEY,
+  document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+  user_id VARCHAR(64) NOT NULL,
+  workspace_id VARCHAR(64) NOT NULL,
+  chunk_index INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  token_count INTEGER,
+  embedding VECTOR(1024),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (document_id, chunk_index)
+);
+-- Indexes: workspace_id, user_id, document_id
+```
+
+---
+
+## 🏃 Getting Started
+
+### **Prerequisites**
+
+- Node.js 22.x
+- MongoDB Atlas account
+- AWS Account with credentials configured
+- Resend API key
+- AWS CDK CLI installed globally
+
+### **Environment Variables**
+
+Create `.env` files in both `backend/` and `lambdas/`:
+
+```bash
+# Backend (.env)
+NODE_ENV=development
+PORT=5241
+MONGO_URI=mongodb+srv://...
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+S3_BUCKET_NAME=contextspace-bucket
+ASK_API_GATEWAY_URL=https://....execute-api.us-east-1.amazonaws.com/prod/ask
+CLIENT_URL=http://localhost:3000
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=7d
+RESEND_API_KEY=re_...
+```
+
+```bash
+# Lambdas (.env)
+AWS_REGION=us-east-1
+DB_SECRET_ARN=arn:aws:secretsmanager:...
+```
+
+### **Installation**
+
+```bash
+# Backend
+cd backend
+npm install
+
+# Lambdas
+cd lambdas
+npm install
+
+# Infrastructure
+cd infra
+npm install
+```
+
+### **Database Migrations**
+
+```bash
+cd lambdas
+npm run run:migrations
+```
+
+### **Deploy Infrastructure**
+
+```bash
+cd infra
+npm run build
+npx cdk bootstrap
+npx cdk deploy
+```
+
+### **Run Backend Locally**
+
+```bash
+cd backend
+npm run dev
+```
+
+---
+
+## 📊 Key Metrics
+
+- **Vector Dimensions:** 1024 (Amazon Titan Embeddings v2)
+- **Chunk Size:** ~500 words per chunk
+- **Similarity Threshold:** 0.25 (cosine similarity)
+- **Top K Retrieval:** 3 chunks
+- **Max File Size:** 10 MB
+- **Supported Formats:** PDF, TXT
+- **Rate Limit:** 100 requests per 15 minutes per IP
+
+---
+
+## 🎯 Design Decisions & Constraints
+
+### **Architectural Choices**
+
+| Decision                  | Rationale                                                      |
+| ------------------------- | -------------------------------------------------------------- |
+| **JWT Only (No Refresh)** | Simplicity for MVP; stateless authentication                   |
+| **No Redis**              | Avoid caching complexity; rely on database indexes             |
+| **No Socket.IO**          | Polling for status updates (future feature)                    |
+| **No Microservices**      | Monolithic backend + event-driven lambdas sufficient for scale |
+| **No Kubernetes**         | Serverless-first approach with AWS Lambda                      |
+| **No LangGraph/MCP**      | Direct Bedrock integration for simplicity                      |
+| **SQS over EventBridge**  | Standard queues with simple FIFO-like processing               |
+| **MongoDB + PostgreSQL**  | MongoDB for operational data, PostgreSQL for vector embeddings |
+
+---
+
+## 🧪 Testing
+
+The system has been validated for:
+
+- ✅ End-to-end document upload → embedding → storage flow
+- ✅ Metadata propagation (user_id, workspace_id, document_id)
+- ✅ Cross-user isolation (different users cannot access each other's documents)
+- ✅ JWT authentication and protected routes
+- ✅ OTP email delivery and verification
+- ✅ Workspace creation in transaction with user verification
+- ✅ Vector similarity search with metadata filtering
+- ✅ Answer generation with source attribution
+
+---
+
+## 📝 License
+
+ISC
+
+---
+
+## 👤 Author
+
+**Narayan Maity**
+
+---
+
+## 🙏 Acknowledgments
+
+Built with:
+
+- AWS CDK for infrastructure provisioning
+- Amazon Bedrock for embeddings and AI inference
+- pgvector for efficient similarity search
+- MongoDB for operational data management
+- Resend for transactional email delivery
 
 - **Backend**: Generates UUID and embeds in S3 key: `upload/{documentId}/{filename}`
 - **S3 Metadata**: Stored as `documentid` metadata field
