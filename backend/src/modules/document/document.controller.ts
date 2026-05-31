@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { logger } from '../../utils/logger';
 import { env } from '../../config/env';
 import { getDefaultWorkspaceForUser } from '../../services/membership.service';
+import { askSchema } from '../../validations/document.validation';
 
 export const uploadDocument = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
 	if (!req.file) {
@@ -36,20 +37,20 @@ export const uploadDocument = asyncHandler(async (req: Request, res: Response, _
 });
 
 export const askQuestion = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
-	const { question } = req.body;
-
+	const validateData = askSchema.parse(req.body);
+	const { question } = validateData;
 	const user_id = req.user?.id;
 
 	if (!user_id) {
 		throw new AppError('User not authenticated', 401);
 	}
 
+	if (!question) {
+		throw new AppError('Question is required', 400);
+	}
+
 	const workspace = await getDefaultWorkspaceForUser(user_id);
 	const workspace_id = workspace._id.toString();
-
-	if (!question || !workspace_id) {
-		throw new AppError('Missing required fields', 400);
-	}
 
 	if (!env.ASK_API_GATEWAY_URL) {
 		throw new AppError('ASK_API_GATEWAY_URL not configured', 500);
