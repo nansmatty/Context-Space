@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { askQuestion, uploadDocument } from './document.controller';
 import { AppError } from '../../utils/global-error-handler';
+import { protect } from '../../middlewares/protect-middleware';
 
 const router = Router();
 
@@ -17,7 +18,7 @@ const upload = multer({
 	},
 });
 
-router.post('/upload', upload.single('file'), uploadDocument);
-router.post('/ask', askQuestion);
+router.post('/upload', protect, upload.single('file'), uploadDocument);
+router.post('/ask', protect, askQuestion);
 
 export default router;
