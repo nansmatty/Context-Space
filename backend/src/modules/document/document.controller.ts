@@ -20,7 +20,7 @@ export const uploadDocument = asyncHandler(async (req: Request, res: Response, _
 	const documentId = randomUUID();
 	const workspace = await getDefaultWorkspaceForUser(userId);
 	const workspaceId = workspace._id.toString();
-	const uploadData = await uploadToS3(file.buffer, file.originalname, file.mimetype, documentId, workspaceId);
+	const uploadData = await uploadToS3(file.buffer, file.originalname, file.mimetype, documentId, workspaceId, userId);
 
 	logger.info('Document uploaded successfully', {
 		documentId,

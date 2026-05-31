@@ -6,7 +6,14 @@ import { env } from '../config/env';
 
 const s3 = new S3Client({ region: env.AWS_REGION });
 
-export const uploadToS3 = async (file: Buffer, originalName: string, contentType: string, documentId: string, workspaceId: string) => {
+export const uploadToS3 = async (
+	file: Buffer,
+	originalName: string,
+	contentType: string,
+	documentId: string,
+	workspaceId: string,
+	userId: string,
+) => {
 	try {
 		const ext = path.extname(originalName);
 		const baseName = path
@@ -24,6 +31,7 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 			ContentType: contentType,
 			Metadata: {
 				originalname: originalName,
+				userid: userId,
 				documentid: documentId,
 				workspaceid: workspaceId,
 			},
@@ -38,6 +46,7 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 			url: `https://${env.S3_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${uniqueKey}`,
 			documentId,
 			workspaceId,
+			userId,
 		};
 	} catch (error: any) {
 		logger.error(`Error uploading file to S3`, {
@@ -45,6 +54,7 @@ export const uploadToS3 = async (file: Buffer, originalName: string, contentType
 			originalName,
 			documentId,
 			workspaceId,
+			userId,
 		});
 		throw new AppError('Failed to upload file to S3', 500);
 	}
