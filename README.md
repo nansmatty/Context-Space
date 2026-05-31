@@ -28,24 +28,24 @@ This project showcases real-world distributed systems design, ownership-based ac
 
 ### Upload Pipeline
 
-\`\`\`
+```
 User → Express API (JWT Auth)
 └─▶ S3 (metadata: user_id, workspace_id, document_id)
 └─▶ Ingestion Lambda (text extraction, chunking)
 └─▶ SQS → Embeddings Lambda (Bedrock Titan 1024-dim)
 └─▶ SQS → DB Insertion Lambda (Aurora pgvector)
 └─▶ SQS → Finalizer Lambda (verify completion)
-\`\`\`
+```
 
 ### Question Answering Pipeline
 
-\`\`\`
+```
 User → Express API (JWT Auth)
 └─▶ API Gateway → Retrieval Lambda
 ├─ Generate embedding (Bedrock Titan)
 ├─ Similarity search (pgvector, filtered by user_id + workspace_id)
 └─▶ Bedrock GPT-OSS-20B (context-aware answer generation)
-\`\`\`
+```
 
 **Key Design**: Ownership metadata (\`user_id\`, \`workspace_id\`, \`document_id\`) propagates through every stage—S3 metadata → SQS messages → PostgreSQL rows → retrieval WHERE clauses—ensuring multi-tenant isolation.
 
@@ -166,7 +166,8 @@ context-space/
 ### 1. Environment Setup
 
 **\`backend/.env\`**
-\`\`\`bash
+
+```bash
 NODE*ENV=development
 PORT=5241
 MONGO_URI=mongodb+srv://...
@@ -178,17 +179,18 @@ ASK_API_GATEWAY_URL=https://....amazonaws.com/prod/ask
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=7d
 RESEND_API_KEY=re*...
-\`\`\`
+```
 
 **\`lambdas/.env\`**
-\`\`\`bash
+
+```bash
 AWS_REGION=us-east-1
 DB_SECRET_ARN=arn:aws:secretsmanager:...
-\`\`\`
+```
 
 ### 2. Install Dependencies
 
-\`\`\`bash
+```bash
 
 # Backend
 
@@ -201,32 +203,32 @@ cd ../lambdas && npm install
 # Infrastructure
 
 cd ../infra && npm install
-\`\`\`
+```
 
 ### 3. Deploy Infrastructure
 
-\`\`\`bash
+```bash
 cd infra
 npm run build
 npx cdk bootstrap # First time only
 npx cdk deploy
-\`\`\`
+```
 
 **Note**: After deployment, copy the API Gateway URL to \`backend/.env\` as \`ASK_API_GATEWAY_URL\`.
 
 ### 4. Run Migrations
 
-\`\`\`bash
+```bash
 cd lambdas
 npm run run:migrations
-\`\`\`
+```
 
 ### 5. Start Backend
 
-\`\`\`bash
+```bash
 cd backend
 npm run dev # Runs on port 5241
-\`\`\`
+```
 
 ---
 
@@ -234,9 +236,9 @@ npm run dev # Runs on port 5241
 
 ### Ownership Hierarchy
 
-\`\`\`
+```
 User → Membership → Workspace → Document → Chunks
-\`\`\`
+```
 
 Every database row and S3 object carries \`user_id\` and \`workspace_id\` metadata. Vector search queries filter by both, ensuring:
 
