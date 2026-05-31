@@ -4,15 +4,23 @@ import { uploadToS3 } from '../../services/s3.services';
 import { randomUUID } from 'crypto';
 import { logger } from '../../utils/logger';
 import { env } from '../../config/env';
+import { getDefaultWorkspaceForUser } from '../../services/membership.service';
 
 export const uploadDocument = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
 	if (!req.file) {
 		throw new AppError('No file uploaded', 400);
 	}
 	const file = req.file;
+	const userId = req.user?.id;
+
+	if (!userId) {
+		throw new AppError('User not authenticated', 401);
+	}
 
 	const documentId = randomUUID();
-	const uploadData = await uploadToS3(file.buffer, file.originalname, file.mimetype, documentId);
+	const workspace = await getDefaultWorkspaceForUser(userId);
+	const workspaceId = workspace._id.toString();
+	const uploadData = await uploadToS3(file.buffer, file.originalname, file.mimetype, documentId, workspaceId);
 
 	logger.info('Document uploaded successfully', {
 		documentId,
