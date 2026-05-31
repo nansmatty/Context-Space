@@ -30,21 +30,21 @@ This project showcases real-world distributed systems design, ownership-based ac
 
 \`\`\`
 User → Express API (JWT Auth)
-  └─▶ S3 (metadata: user_id, workspace_id, document_id)
-       └─▶ Ingestion Lambda (text extraction, chunking)
-            └─▶ SQS → Embeddings Lambda (Bedrock Titan 1024-dim)
-                 └─▶ SQS → DB Insertion Lambda (Aurora pgvector)
-                      └─▶ SQS → Finalizer Lambda (verify completion)
+└─▶ S3 (metadata: user_id, workspace_id, document_id)
+└─▶ Ingestion Lambda (text extraction, chunking)
+└─▶ SQS → Embeddings Lambda (Bedrock Titan 1024-dim)
+└─▶ SQS → DB Insertion Lambda (Aurora pgvector)
+└─▶ SQS → Finalizer Lambda (verify completion)
 \`\`\`
 
 ### Question Answering Pipeline
 
 \`\`\`
 User → Express API (JWT Auth)
-  └─▶ API Gateway → Retrieval Lambda
-       ├─ Generate embedding (Bedrock Titan)
-       ├─ Similarity search (pgvector, filtered by user_id + workspace_id)
-       └─▶ Bedrock GPT-OSS-20B (context-aware answer generation)
+└─▶ API Gateway → Retrieval Lambda
+├─ Generate embedding (Bedrock Titan)
+├─ Similarity search (pgvector, filtered by user_id + workspace_id)
+└─▶ Bedrock GPT-OSS-20B (context-aware answer generation)
 \`\`\`
 
 **Key Design**: Ownership metadata (\`user_id\`, \`workspace_id\`, \`document_id\`) propagates through every stage—S3 metadata → SQS messages → PostgreSQL rows → retrieval WHERE clauses—ensuring multi-tenant isolation.
@@ -56,6 +56,7 @@ User → Express API (JWT Auth)
 ### ✅ Completed
 
 **Authentication & Multi-Tenancy**
+
 - Custom JWT authentication (HTTP-only cookies, no refresh tokens)
 - OTP email verification via Resend
 - User/Workspace/Membership models with MongoDB transactions
@@ -63,6 +64,7 @@ User → Express API (JWT Auth)
 - Role-based access control (owner/admin/member)
 
 **Document Processing**
+
 - Protected upload API (PDF/TXT, max 10MB)
 - S3 event-driven ingestion (text extraction, chunking ~500 words)
 - Amazon Bedrock Titan embeddings (1024-dim vectors)
@@ -72,12 +74,14 @@ User → Express API (JWT Auth)
 - Finalizer verification pattern (ensures all chunks inserted)
 
 **AI Question Answering**
+
 - Metadata-filtered vector retrieval (workspace + user isolation)
 - Cosine similarity search (top-k=3, threshold ≥0.25)
 - Context-aware answer generation (Bedrock GPT-OSS-20B)
 - Source citation with similarity scores
 
 **Infrastructure**
+
 - AWS CDK (TypeScript) for full IaC
 - VPC with private subnets + VPC endpoints (Secrets Manager, Bedrock, SQS)
 - Aurora PostgreSQL Serverless v2 with pgvector
@@ -107,37 +111,45 @@ User → Express API (JWT Auth)
 
 ## 📂 Project Structure
 
-\`\`\`
+```
 context-space/
-├── backend/               # Express API server
+│
+├── backend/                    # Express API server (Node.js + TypeScript)
 │   ├── src/
-│   │   ├── modules/       # auth, document controllers + routes
-│   │   ├── models/        # user, workspace, membership (Mongoose)
-│   │   ├── middlewares/   # JWT protect, error handling
-│   │   ├── services/      # S3, email, auth services
-│   │   └── config/        # env validation, DB connection
+│   │   ├── modules/
+│   │   │   ├── auth/          # Authentication routes + controllers
+│   │   │   └── document/      # Document upload + ask endpoints
+│   │   ├── models/            # MongoDB schemas (User, Workspace, Membership)
+│   │   ├── middlewares/       # JWT protection, error handling
+│   │   ├── services/          # S3, email, auth business logic
+│   │   └── config/            # Environment validation, DB connection
 │   └── package.json
 │
-├── lambdas/               # AWS Lambda handlers
+├── lambdas/                    # AWS Lambda handlers (serverless functions)
 │   ├── src/
-│   │   ├── ingestion-handler/      # S3 trigger, text extraction
-│   │   ├── embeddings-handler/     # Bedrock Titan embeddings
-│   │   ├── db-insertation-handler/ # Aurora pgvector insertion
-│   │   ├── finalizer-data-handler/ # Completion verification
-│   │   ├── retrieval-handler/      # Question answering
-│   │   ├── services/               # bedrock, parser, retrieval
-│   │   └── db/migrations/          # PostgreSQL schema
+│   │   ├── ingestion-handler/         # PDF/TXT extraction + chunking
+│   │   ├── embeddings-handler/        # Bedrock Titan embeddings
+│   │   ├── db-insertation-handler/    # Aurora pgvector storage
+│   │   ├── finalizer-data-handler/    # Document completion verification
+│   │   ├── retrieval-handler/         # Vector search + AI answering
+│   │   ├── services/                  # Bedrock, parser, retrieval logic
+│   │   └── db/
+│   │       └── migrations/            # PostgreSQL schema + indexes
 │   └── package.json
 │
-├── infra/                 # AWS CDK infrastructure
+├── infra/                      # AWS CDK infrastructure (IaC)
 │   ├── lib/
-│   │   ├── stack/         # Main stack definition
-│   │   └── service-constructs/  # S3, Lambda, SQS, Aurora
+│   │   ├── stack/             # Main CloudFormation stack
+│   │   └── service-constructs/
+│   │       ├── s3-bucket-construct.ts
+│   │       ├── lambda-constructs.ts
+│   │       ├── sqs-queue-construct.ts
+│   │       └── database-construct.ts
 │   └── package.json
 │
 └── docs/
-    └── architecture.png
-\`\`\`
+    └── architecture.png        # System architecture diagram
+```
 
 ---
 
@@ -155,7 +167,7 @@ context-space/
 
 **\`backend/.env\`**
 \`\`\`bash
-NODE_ENV=development
+NODE*ENV=development
 PORT=5241
 MONGO_URI=mongodb+srv://...
 AWS_REGION=us-east-1
@@ -165,7 +177,7 @@ S3_BUCKET_NAME=contextspace-bucket
 ASK_API_GATEWAY_URL=https://....amazonaws.com/prod/ask
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=7d
-RESEND_API_KEY=re_...
+RESEND_API_KEY=re*...
 \`\`\`
 
 **\`lambdas/.env\`**
@@ -177,13 +189,17 @@ DB_SECRET_ARN=arn:aws:secretsmanager:...
 ### 2. Install Dependencies
 
 \`\`\`bash
+
 # Backend
+
 cd backend && npm install
 
 # Lambdas
+
 cd ../lambdas && npm install
 
 # Infrastructure
+
 cd ../infra && npm install
 \`\`\`
 
@@ -192,7 +208,7 @@ cd ../infra && npm install
 \`\`\`bash
 cd infra
 npm run build
-npx cdk bootstrap    # First time only
+npx cdk bootstrap # First time only
 npx cdk deploy
 \`\`\`
 
@@ -209,7 +225,7 @@ npm run run:migrations
 
 \`\`\`bash
 cd backend
-npm run dev  # Runs on port 5241
+npm run dev # Runs on port 5241
 \`\`\`
 
 ---
@@ -223,6 +239,7 @@ User → Membership → Workspace → Document → Chunks
 \`\`\`
 
 Every database row and S3 object carries \`user_id\` and \`workspace_id\` metadata. Vector search queries filter by both, ensuring:
+
 - Users only retrieve their own documents
 - Cross-workspace isolation (even for future team workspaces)
 - End-to-end audit trail
@@ -247,49 +264,49 @@ Every database row and S3 object carries \`user_id\` and \`workspace_id\` metada
 
 ### Authentication (\`/api/auth\`)
 
-| Endpoint          | Method | Auth | Description                 |
-| ----------------- | ------ | ---- | --------------------------- |
-| \`/register\`       | POST   | ❌   | Create user                 |
-| \`/verify-otp\`     | POST   | ❌   | Verify email (OTP)          |
-| \`/resend-otp\`     | POST   | ❌   | Resend verification OTP     |
-| \`/login\`          | POST   | ❌   | Authenticate, set JWT cookie|
-| \`/logout\`         | POST   | ❌   | Clear cookie                |
-| \`/protected-test\` | GET    | ✅   | Test middleware             |
+| Endpoint            | Method | Auth | Description                  |
+| ------------------- | ------ | ---- | ---------------------------- |
+| \`/register\`       | POST   | ❌   | Create user                  |
+| \`/verify-otp\`     | POST   | ❌   | Verify email (OTP)           |
+| \`/resend-otp\`     | POST   | ❌   | Resend verification OTP      |
+| \`/login\`          | POST   | ❌   | Authenticate, set JWT cookie |
+| \`/logout\`         | POST   | ❌   | Clear cookie                 |
+| \`/protected-test\` | GET    | ✅   | Test middleware              |
 
 ### Documents (\`/api/documents\`)
 
-| Endpoint  | Method | Auth | Description                            |
-| --------- | ------ | ---- | -------------------------------------- |
-| \`/upload\` | POST   | ✅   | Upload PDF/TXT (max 10MB)              |
-| \`/ask\`    | POST   | ✅   | Ask question (proxies to API Gateway)  |
+| Endpoint    | Method | Auth | Description                           |
+| ----------- | ------ | ---- | ------------------------------------- |
+| \`/upload\` | POST   | ✅   | Upload PDF/TXT (max 10MB)             |
+| \`/ask\`    | POST   | ✅   | Ask question (proxies to API Gateway) |
 
 ---
 
 ## 🎯 Design Decisions
 
-| Decision                    | Rationale                                           |
-| --------------------------- | --------------------------------------------------- |
-| **JWT only (no refresh)**   | Stateless auth, simpler MVP                         |
-| **MongoDB + PostgreSQL**    | MongoDB for ops data, Postgres for vector search    |
-| **SQS over EventBridge**    | Simpler queue-based processing, FIFO-like guarantees|
-| **No Redis**                | Rely on DB indexes, avoid caching layer             |
-| **No Kubernetes**           | Serverless-first (Lambda autoscaling)               |
-| **No LangGraph/MCP**        | Direct Bedrock SDK integration                      |
-| **Finalizer pattern**       | Verify all chunks inserted before marking complete  |
+| Decision                  | Rationale                                            |
+| ------------------------- | ---------------------------------------------------- |
+| **JWT only (no refresh)** | Stateless auth, simpler MVP                          |
+| **MongoDB + PostgreSQL**  | MongoDB for ops data, Postgres for vector search     |
+| **SQS over EventBridge**  | Simpler queue-based processing, FIFO-like guarantees |
+| **No Redis**              | Rely on DB indexes, avoid caching layer              |
+| **No Kubernetes**         | Serverless-first (Lambda autoscaling)                |
+| **No LangGraph/MCP**      | Direct Bedrock SDK integration                       |
+| **Finalizer pattern**     | Verify all chunks inserted before marking complete   |
 
 ---
 
 ## 📊 Configuration
 
-| Parameter                | Value                          |
-| ------------------------ | ------------------------------ |
-| Vector Dimensions        | 1024 (Titan Embeddings v2)     |
-| Chunk Size               | ~500 words                     |
-| Similarity Threshold     | 0.25 (cosine)                  |
-| Top-K Retrieval          | 3 chunks                       |
-| Max File Size            | 10 MB                          |
-| Supported Formats        | PDF, TXT                       |
-| Rate Limit               | 100 req/15 min per IP          |
+| Parameter            | Value                      |
+| -------------------- | -------------------------- |
+| Vector Dimensions    | 1024 (Titan Embeddings v2) |
+| Chunk Size           | ~500 words                 |
+| Similarity Threshold | 0.25 (cosine)              |
+| Top-K Retrieval      | 3 chunks                   |
+| Max File Size        | 10 MB                      |
+| Supported Formats    | PDF, TXT                   |
+| Rate Limit           | 100 req/15 min per IP      |
 
 ---
 
