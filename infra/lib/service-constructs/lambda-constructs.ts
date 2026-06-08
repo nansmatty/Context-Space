@@ -20,6 +20,7 @@ export class LambdaConstructs extends Construct {
 	public readonly dbInsertionLambda: NodejsFunction;
 	public readonly retrievalLambda: NodejsFunction;
 	public readonly finalizeLambda: NodejsFunction;
+	public readonly documentStatusCheckLambda: NodejsFunction;
 	public readonly lambdaSecurityGroup: ec2.SecurityGroup;
 
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {
@@ -125,6 +126,19 @@ export class LambdaConstructs extends Construct {
 			},
 		});
 		props.dbCluster.secret?.grantRead(this.finalizeLambda);
+
+		this.documentStatusCheckLambda = new NodejsFunction(this, 'DocumentStatusCheckLambda', {
+			runtime: Runtime.NODEJS_22_X,
+			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'document-status-check-handler', 'index.ts'),
+			handler: 'handler',
+			vpc: props.vpc,
+			securityGroups: [this.lambdaSecurityGroup],
+			environment: {
+				DB_SECRET_ARN: props.dbCluster.secret!.secretArn,
+			},
+			timeout: Duration.seconds(30),
+		});
+		props.dbCluster.secret?.grantRead(this.documentStatusCheckLambda);
 	}
 
 	grantOperationalAccess() {
