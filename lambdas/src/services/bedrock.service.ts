@@ -76,7 +76,7 @@ async function invokeBedrockWithRetry(command: InvokeModelCommand) {
 				throw error;
 			}
 
-			const backoffMs = 2 ** attempt * 1000; // Exponential backoff: 200ms, 400ms, 800ms
+			const backoffMs = 2 ** attempt * 1000; // Exponential backoff: 2000ms, 4000ms, 8000ms
 
 			console.warn(`Bedrock request failed. Retrying in ${backoffMs} ms`, { attempt, error: error instanceof Error ? error.message : String(error) });
 
