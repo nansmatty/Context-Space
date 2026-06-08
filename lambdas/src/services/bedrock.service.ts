@@ -63,6 +63,30 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 	}
 }
 
+async function invokeBedrockWithRetry(command: InvokeModelCommand) {
+	let lastError: unknown;
+
+	for (let attempt = 1; attempt <= BEDROCK_MAX_RETRIES; attempt++) {
+		try {
+			return await withTimeout(bedrockClient.send(command), BEDROCK_TIMEOUT_MS);
+		} catch (error) {
+			lastError = error;
+
+			if (!isRetryableBedrockError(error) || attempt === BEDROCK_MAX_RETRIES) {
+				throw error;
+			}
+
+			const backoffMs = 2 ** attempt * 1000; // Exponential backoff: 200ms, 400ms, 800ms
+
+			console.warn(`Bedrock request failed. Retrying in ${backoffMs} ms`, { attempt, error: error instanceof Error ? error.message : String(error) });
+
+			await sleep(backoffMs);
+		}
+	}
+
+	throw lastError;
+}
+
 export async function generateEmbeddings(text: string): Promise<number[]> {
 	if (!text || text.trim() === '') {
 		throw new Error('Cannot generate embeddings for empty text.');
@@ -77,7 +101,7 @@ export async function generateEmbeddings(text: string): Promise<number[]> {
 		}),
 	});
 
-	const response = await bedrockClient.send(command);
+	const response = await invokeBedrockWithRetry(command);
 
 	if (!response.body) {
 		throw new Error('No response body received from Bedrock.');
@@ -149,7 +173,7 @@ export async function generateAnswerFromContext(question: string, chunks: Retrie
 		}),
 	});
 
-	const response = await bedrockClient.send(command);
+	const response = await invokeBedrockWithRetry(command);
 
 	if (!response.body) {
 		throw new Error('No response body received from Bedrock.');
