@@ -2,6 +2,13 @@ import 'dotenv/config';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { cleanModelAnswer } from '../utils/general-utils';
 
+const BEDROCK_TIMEOUT_MS = 15000; // 15 seconds timeout for Bedrock API calls
+const BEDROCK_MAX_RETRIES = 3; // Number of retries for Bedrock API calls in case of failure
+
+function sleep(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 const bedrockClient = new BedrockRuntimeClient({
 	region: process.env.AWS_REGION,
 });
@@ -18,6 +25,25 @@ type RetrieveChunk = {
 	content: string;
 	similarity: number;
 };
+
+function isRetryableBedrockError(error: unknown) {
+	const err = error as { name?: string; message: string; $metadata?: { httpStatusCode?: number } };
+
+	const statusCode = err.$metadata?.httpStatusCode;
+
+	return (
+		statusCode === 429 || // Too Many Requests
+		statusCode === 500 || // Internal Server Error
+		statusCode === 502 || // Bad Gateway
+		statusCode === 503 || // Service Unavailable
+		statusCode === 504 || // Gateway Timeout
+		err.name === 'ThrottlingException' ||
+		err.name === 'TooManyRequestsException' ||
+		err.name === 'ServiceUnavailableException' ||
+		err.name === 'InternalServerException' ||
+		err.name === 'TimeoutError'
+	);
+}
 
 export async function generateEmbeddings(text: string): Promise<number[]> {
 	if (!text || text.trim() === '') {
