@@ -57,6 +57,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 	});
 
 	try {
+		// Race between real bedrock response and timeout will decided which one settles first
 		return await Promise.race([promise, timeoutPromise]);
 	} finally {
 		clearTimeout(timeoutId!);

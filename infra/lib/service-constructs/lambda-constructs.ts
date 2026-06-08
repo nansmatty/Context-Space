@@ -25,6 +25,7 @@ export class LambdaConstructs extends Construct {
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {
 		super(scope, id);
 
+		// naming change required after I destroy the cdk today
 		this.lambdaSecurityGroup = new ec2.SecurityGroup(this, 'IngestionLambdaSecurityGroup', {
 			vpc: props.vpc,
 			allowAllOutbound: true,
@@ -81,6 +82,7 @@ export class LambdaConstructs extends Construct {
 			timeout: Duration.seconds(30),
 		});
 
+		// naming change required after I destroy the cdk today
 		this.dbInsertionLambda = new NodejsFunction(this, 'dbInsertionLambda', {
 			runtime: Runtime.NODEJS_22_X,
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'db-insertation-handler', 'index.ts'),
