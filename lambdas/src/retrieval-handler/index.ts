@@ -24,7 +24,8 @@ export const handler = async (event: any) => {
 
 		const embeddingOfQuestion = await generateEmbeddings(question);
 		const TOP_K = 3;
-		const SIMILARITY_THRESHOLD = 0.25;
+		const MIN_SIMILARITY_THRESHOLD = 0.25;
+		const HIGH_SIMILARITY_THRESHOLD = 0.45;
 
 		const searchResults = await performSimilaritySearch({
 			questionEmbedding: embeddingOfQuestion,
@@ -33,7 +34,16 @@ export const handler = async (event: any) => {
 			limit: TOP_K,
 		});
 
-		const filtered = searchResults.filter((r) => r.similarity >= SIMILARITY_THRESHOLD);
+		// Filter results based on similarity threshold and determine retrieval status and also adding low confidence retrieval with status and confidence level in the response.
+
+		const filtered = searchResults.filter((r) => r.similarity >= MIN_SIMILARITY_THRESHOLD);
+		const topSimilarity = filtered.length > 0 ? Number(filtered[0].similarity) : null;
+
+		const retrievalMeta = {
+			status: filtered.length === 0 ? 'empty' : topSimilarity !== null && topSimilarity < HIGH_SIMILARITY_THRESHOLD ? 'low_confidence' : 'success',
+			confidence: filtered.length === 0 ? 'none' : topSimilarity !== null && topSimilarity < HIGH_SIMILARITY_THRESHOLD ? 'low' : 'high',
+			topSimilarity,
+		};
 
 		console.log({
 			totalResults: searchResults.length,
@@ -50,6 +60,28 @@ export const handler = async (event: any) => {
 						question,
 						answer: "I couldn't find relevant information in the uploaded documents.",
 						sources: [],
+						retrieval: retrievalMeta,
+						grounded: false,
+					},
+				}),
+			};
+		}
+
+		if (retrievalMeta.status === 'low_confidence') {
+			return {
+				statusCode: 200,
+				body: JSON.stringify({
+					message: 'Low confidence in retrieved context. Answer may be inaccurate.',
+					data: {
+						question,
+						answer: "I found some information that might be relevant, but I'm not very confident about it.",
+						sources: filtered.map((chunk) => ({
+							document_id: chunk.document_id,
+							chunk_index: chunk.chunk_index,
+							similarity: chunk.similarity,
+						})),
+						retrieval: retrievalMeta,
+						grounded: false,
 					},
 				}),
 			};
@@ -69,6 +101,8 @@ export const handler = async (event: any) => {
 						chunk_index: chunk.chunk_index,
 						similarity: chunk.similarity,
 					})),
+					retrieval: retrievalMeta,
+					grounded: true,
 				},
 			}),
 		};
