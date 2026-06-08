@@ -10,15 +10,17 @@
 
 ## 📋 Overview
 
-**ContextSpace** is a production-grade, multi-tenant serverless RAG platform for secure document processing and AI-powered question answering. Built entirely on AWS serverless infrastructure, it demonstrates enterprise backend patterns including:
+**ContextSpace** is a production-ready, multi-tenant serverless RAG platform for secure document processing and AI-powered question answering. Built entirely on AWS serverless infrastructure, this **completed MVP** demonstrates enterprise backend patterns including:
 
 - **Custom JWT Authentication** with OTP email verification
 - **Multi-tenant Workspace Architecture** with strict data isolation
 - **Event-driven Serverless Pipeline** (S3 → Lambda → SQS → Aurora)
+- **RAG Reliability Layer** with confidence scoring and graceful degradation
+- **Document Status Tracking** with real-time polling support
 - **Metadata-filtered Vector Search** ensuring cross-user security
 - **Infrastructure as Code** using AWS CDK
 
-This project showcases real-world distributed systems design, ownership-based access control, and production-ready serverless backend engineering.
+This project showcases real-world distributed systems design, production-grade error handling, ownership-based access control, and enterprise serverless patterns.
 
 ---
 
@@ -44,7 +46,17 @@ User → Express API (JWT Auth)
 └─▶ API Gateway → Retrieval Lambda
 ├─ Generate embedding (Bedrock Titan)
 ├─ Similarity search (pgvector, filtered by user_id + workspace_id)
-└─▶ Bedrock GPT-OSS-20B (context-aware answer generation)
+├─ Confidence scoring + empty retrieval handling
+└─▶ Bedrock GPT-OSS-20B (context-aware answer with retry/fallback)
+```
+
+### Document Status Pipeline
+
+```
+User → Express API (JWT Auth)
+└─▶ API Gateway → Document Status Lambda
+└─ Query Aurora PostgreSQL (filtered by user_id + document_id)
+└─ Return: status, chunk_count, timestamps, error_message
 ```
 
 **Key Design**: Ownership metadata (\`user_id\`, \`workspace_id\`, \`document_id\`) propagates through every stage—S3 metadata → SQS messages → PostgreSQL rows → retrieval WHERE clauses—ensuring multi-tenant isolation.
@@ -71,6 +83,8 @@ User → Express API (JWT Auth)
 - Aurora PostgreSQL with pgvector storage
 - 4-stage Lambda pipeline with SQS queues
 - Document status tracking (processing → completed/failed)
+- Document Status Check Lambda with API Gateway integration
+- Real-time status polling support via backend proxy
 - Finalizer verification pattern (ensures all chunks inserted)
 
 **AI Question Answering**
@@ -79,6 +93,16 @@ User → Express API (JWT Auth)
 - Cosine similarity search (top-k=3, threshold ≥0.25)
 - Context-aware answer generation (Bedrock GPT-OSS-20B)
 - Source citation with similarity scores
+
+- **RAG Reliability Layer:**
+  - Empty retrieval handling (no documents matched)
+  - Low-confidence retrieval handling (similarity < threshold)
+  - Retrieval confidence metadata (status, topSimilarity)
+  - Generation status tracking (grounded, degraded, failed)
+  - Bedrock timeout protection with exponential retry
+  - Graceful degradation when LLM generation fails
+  - Context size validation (max 8000 chars)
+  - Question length validation
 
 **Infrastructure**
 
@@ -90,11 +114,12 @@ User → Express API (JWT Auth)
 
 ### 🔮 Roadmap
 
-- Document status polling API
 - Document deletion with cascade
-- Retry failed document processing
-- Team workspace management + invitations
-- Granular permission system
+- Retry/reprocess failed documents
+- Team workspace creation + invitations
+- Multi-user workspace collaboration
+- Advanced permission management
+- Usage analytics dashboard
 - Frontend UI
 
 ---
@@ -131,7 +156,8 @@ context-space/
 │   │   ├── embeddings-handler/        # Bedrock Titan embeddings
 │   │   ├── db-insertation-handler/    # Aurora pgvector storage
 │   │   ├── finalizer-data-handler/    # Document completion verification
-│   │   ├── retrieval-handler/         # Vector search + AI answering
+│   │   ├── retrieval-handler/         # Vector search + AI answering + reliability
+│   │   ├── document-status-handler/   # Document status check
 │   │   ├── services/                  # Bedrock, parser, retrieval logic
 │   │   └── db/
 │   │       └── migrations/            # PostgreSQL schema + indexes
@@ -176,6 +202,7 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 S3_BUCKET_NAME=contextspace-bucket
 ASK_API_GATEWAY_URL=https://....amazonaws.com/prod/ask
+DOCUMENT_STATUS_API_GATEWAY_URL=https://....amazonaws.com/prod/document-status
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=7d
 RESEND_API_KEY=re*...
@@ -214,7 +241,7 @@ npx cdk bootstrap # First time only
 npx cdk deploy
 ```
 
-**Note**: After deployment, copy the API Gateway URL to \`backend/.env\` as \`ASK_API_GATEWAY_URL\`.
+**Note**: After deployment, copy the API Gateway URL to \`backend/.env\` as \`DOCUMENT_STATUS_API_GATEWAY_URL\`.
 
 ### 4. Run Migrations
 
@@ -277,10 +304,11 @@ Every database row and S3 object carries \`user_id\` and \`workspace_id\` metada
 
 ### Documents (\`/api/documents\`)
 
-| Endpoint    | Method | Auth | Description                           |
-| ----------- | ------ | ---- | ------------------------------------- |
-| \`/upload\` | POST   | ✅   | Upload PDF/TXT (max 10MB)             |
-| \`/ask\`    | POST   | ✅   | Ask question (proxies to API Gateway) |
+| Endpoint                | Method | Auth | Description                                                |
+| ----------------------- | ------ | ---- | ---------------------------------------------------------- |
+| \`/upload\`             | POST   | ✅   | Upload PDF/TXT (max 10MB)                                  |
+| \`/ask\`                | POST   | ✅   | Ask question with RAG reliability (proxies to API Gateway) |
+| \`/status/:documentId\` | GET    | ✅   | Check document processing status (proxies to API Gateway)  |
 
 ---
 
