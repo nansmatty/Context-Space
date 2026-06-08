@@ -17,6 +17,7 @@ export class SqsQueueConstruct extends Construct {
 			removalPolicy: RemovalPolicy.DESTROY,
 			deadLetterQueue: {
 				queue: new sqs.Queue(this, 'embeddingsDLQ', {
+					queueName: 'contextspace-embeddings-dlq',
 					retentionPeriod: Duration.days(7),
 					removalPolicy: RemovalPolicy.DESTROY,
 				}),
@@ -31,6 +32,7 @@ export class SqsQueueConstruct extends Construct {
 			removalPolicy: RemovalPolicy.DESTROY,
 			deadLetterQueue: {
 				queue: new sqs.Queue(this, 'databaseDataDLQ', {
+					queueName: 'contextspace-database-data-dlq',
 					retentionPeriod: Duration.days(7),
 					removalPolicy: RemovalPolicy.DESTROY,
 				}),
