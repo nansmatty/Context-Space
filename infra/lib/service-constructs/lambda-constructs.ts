@@ -26,11 +26,10 @@ export class LambdaConstructs extends Construct {
 	constructor(scope: Construct, id: string, props: LambdaConstructsProps) {
 		super(scope, id);
 
-		// naming change required after I destroy the cdk today
-		this.lambdaSecurityGroup = new ec2.SecurityGroup(this, 'IngestionLambdaSecurityGroup', {
+		this.lambdaSecurityGroup = new ec2.SecurityGroup(this, 'LambdaSecurityGroup', {
 			vpc: props.vpc,
 			allowAllOutbound: true,
-			description: 'Security group for ingestion lambda',
+			description: 'Security group for all lambdas',
 		});
 
 		props.dbSecurityGroup.addIngressRule(this.lambdaSecurityGroup, ec2.Port.tcp(5432), 'Allow Lambda to access Aurora PostgreSQL');
@@ -83,8 +82,7 @@ export class LambdaConstructs extends Construct {
 			timeout: Duration.seconds(30),
 		});
 
-		// naming change required after I destroy the cdk today
-		this.dbInsertionLambda = new NodejsFunction(this, 'dbInsertionLambda', {
+		this.dbInsertionLambda = new NodejsFunction(this, 'DbInsertionLambda', {
 			runtime: Runtime.NODEJS_22_X,
 			entry: path.join(__dirname, '..', '..', '..', 'lambdas', 'src', 'db-insertation-handler', 'index.ts'),
 			handler: 'handler',
