@@ -87,7 +87,16 @@ export const handler = async (event: any) => {
 			};
 		}
 
-		const answer = await generateAnswerFromContext(question, filtered);
+		let answer: string;
+		let generationStatus: 'success' | 'failed' = 'success';
+
+		try {
+			answer = await generateAnswerFromContext(question, filtered);
+		} catch (error) {
+			console.error('Error generating answer:', error);
+			answer = 'I found relevant document context, but the AI model failed to generate an answer. Please try again.';
+			generationStatus = 'failed';
+		}
 
 		return {
 			statusCode: 200,
@@ -102,7 +111,10 @@ export const handler = async (event: any) => {
 						similarity: chunk.similarity,
 					})),
 					retrieval: retrievalMeta,
-					grounded: true,
+					generation: {
+						status: generationStatus,
+					},
+					grounded: generationStatus === 'success',
 				},
 			}),
 		};
