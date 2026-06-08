@@ -14,6 +14,7 @@ const envSchema = z.object({
 	S3_BUCKET_NAME: z.string().min(1, 'S3_BUCKET_NAME is required'),
 
 	ASK_API_GATEWAY_URL: z.url('ASK_API_GATEWAY_URL must be a valid URL'),
+	DOCUMENT_STATUS_API_GATEWAY_URL: z.url('DOCUMENT_STATUS_API_GATEWAY_URL must be a valid URL'),
 	CLIENT_URL: z.url('CLIENT_URL must be a valid URL'),
 
 	JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
