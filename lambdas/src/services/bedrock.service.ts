@@ -45,6 +45,24 @@ function isRetryableBedrockError(error: unknown) {
 	);
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+	let timeoutId: NodeJS.Timeout;
+
+	const timeoutPromise = new Promise<never>((_, reject) => {
+		timeoutId = setTimeout(() => {
+			const error = new Error(`Bedrock request timed out after ${timeoutMs} ms`);
+			error.name = 'TimeoutError';
+			reject(error);
+		}, timeoutMs);
+	});
+
+	try {
+		return await Promise.race([promise, timeoutPromise]);
+	} finally {
+		clearTimeout(timeoutId!);
+	}
+}
+
 export async function generateEmbeddings(text: string): Promise<number[]> {
 	if (!text || text.trim() === '') {
 		throw new Error('Cannot generate embeddings for empty text.');
