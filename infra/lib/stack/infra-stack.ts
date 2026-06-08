@@ -63,6 +63,10 @@ export class ContextSpaceStack extends cdk.Stack {
 		const askResource = api.root.addResource('ask');
 		askResource.addMethod('POST', new LambdaIntegration(lambdas.retrievalLambda));
 
+		// API Gateway integration with document status check lambda
+		const documentStatusResource = api.root.addResource('document-status');
+		documentStatusResource.addMethod('POST', new LambdaIntegration(lambdas.documentStatusCheckLambda));
+
 		// Granting operational access to the lambda to call Bedrock
 		lambdas.grantOperationalAccess();
 
