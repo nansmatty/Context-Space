@@ -90,3 +90,58 @@ export const askQuestion = asyncHandler(async (req: Request, res: Response, _nex
 
 	res.status(200).json(data);
 });
+
+export const checkDocumentStatus = asyncHandler(async (req: Request, res: Response, _next: NextFunction) => {
+	const { documentId } = req.params;
+	const user_id = req.user?.id;
+
+	if (!user_id) {
+		throw new AppError('User not authenticated', 401);
+	}
+
+	if (!documentId) {
+		throw new AppError('Document ID is required', 400);
+	}
+
+	const workspace = await getDefaultWorkspaceForUser(user_id);
+	const workspace_id = workspace._id.toString();
+
+	if (!env.DOCUMENT_STATUS_API_GATEWAY_URL) {
+		throw new AppError('DOCUMENT_STATUS_API_GATEWAY_URL not configured', 500);
+	}
+
+	const response = await fetch(env.DOCUMENT_STATUS_API_GATEWAY_URL!, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			document_id: documentId,
+			user_id,
+			workspace_id,
+		}),
+	});
+
+	// Check if response is ok
+	if (!response.ok) {
+		const errorText = await response.text();
+		logger.error('External API error', {
+			status: response.status,
+			statusText: response.statusText,
+			error: errorText,
+			requestId: req.requestId,
+		});
+		throw new AppError(`External API returned error: ${response.statusText}`, response.status);
+	}
+
+	const data = await response.json();
+
+	logger.info('Document status fetched successfully', {
+		document_id: documentId,
+		user_id,
+		workspace_id,
+		requestId: req.requestId,
+	});
+
+	res.status(200).json(data);
+});
