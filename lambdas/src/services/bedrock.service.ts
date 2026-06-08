@@ -130,11 +130,21 @@ export async function generateAnswerFromContext(question: string, chunks: Retrie
 		return 'I could not find enough relevant information in the uploaded document to answer this question.';
 	}
 
-	const context = chunks
+	const MAX_CONTEXT_LENGTH = 12000; // Max tokens for context, adjust as needed
+
+	let context = chunks
 		.map((chunk, index) => {
 			return `Source ${index + 1}:\n${chunk.content}`;
 		})
 		.join('\n\n');
+
+	if (context.length > MAX_CONTEXT_LENGTH) {
+		context = context.slice(0, MAX_CONTEXT_LENGTH);
+		console.warn(`Context truncated context due to size limit.`, {
+			originalLength: context.length,
+			maxLength: MAX_CONTEXT_LENGTH,
+		});
+	}
 
 	const systemPrompt = `
 	You are an AI assistant for answering questions using only the provided document context.
