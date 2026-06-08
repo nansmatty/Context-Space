@@ -101,7 +101,7 @@ export const handler = async (event: any) => {
 		return {
 			statusCode: 200,
 			body: JSON.stringify({
-				message: 'Answer generated successfully',
+				message: generationStatus === 'success' ? 'Answer generated successfully' : 'Relevant context found, but answer generation failed',
 				data: {
 					question,
 					answer,
