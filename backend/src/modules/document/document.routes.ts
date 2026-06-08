@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { askQuestion, uploadDocument } from './document.controller';
+import { askQuestion, checkDocumentStatus, uploadDocument } from './document.controller';
 import { AppError } from '../../utils/global-error-handler';
 import { protect } from '../../middlewares/protect-middleware';
 
@@ -20,5 +20,7 @@ const upload = multer({
 
 router.post('/upload', protect, upload.single('file'), uploadDocument);
 router.post('/ask', protect, askQuestion);
+
+router.get('/:documentId/status', protect, checkDocumentStatus);
 
 export default router;
