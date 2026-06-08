@@ -43,3 +43,9 @@ export const embeddingsQueueMessageSchema = z.object({
 		file_size: z.number().int().positive('File size must be a positive integer'),
 	}),
 });
+
+export const documentStatusCheckMessageSchema = z.object({
+	document_id: z.uuid(),
+	user_id: z.string().trim().min(1, 'User ID is required'),
+	workspace_id: z.string().trim().min(1, 'Workspace ID is required'),
+});
