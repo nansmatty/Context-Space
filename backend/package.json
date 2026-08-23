@@ -1,7 +1,7 @@
 {
 	"name": "backend",
 	"version": "1.0.0",
-	"description": "",
+	"description": "ContextSpace is a production-ready, multi-tenant serverless RAG platform for secure document processing and AI-powered question answering.",
 	"main": "index.js",
 	"scripts": {
 		"dev": "ts-node-dev --respawn --transpile-only src/server.ts",
